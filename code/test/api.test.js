@@ -44,7 +44,9 @@ async function req(method, path, opts = {}) {
           : (opts.body !== undefined && opts.body !== null ? JSON.stringify(opts.body) : undefined),
     redirect: 'manual'
   });
-  const sc = res.headers.get('set-cookie');
+  // 兼容 Node 版本差异: undici 规范要求用 getSetCookie() 读取 set-cookie
+  // (Node 22 的 headers.get('set-cookie') 返回 null, Node 24 部分版本可读)
+  const sc = res.headers.getSetCookie?.()?.[0] || res.headers.get('set-cookie');
   if (sc) { const m = sc.match(/blog_token=([^;]+)/); if (m) cookie = `blog_token=${m[1]}`; }
   const text = await res.text();
   try { return { status: res.status, headers: res.headers, data: JSON.parse(text), text }; }

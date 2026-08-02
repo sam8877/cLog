@@ -80,21 +80,11 @@ export async function seedDatabase(db: D1Database, env?: { ADMIN_PASSWORD?: stri
     console.log('  [安全] 已轮换弱 JWT 密钥');
   }
 
-  // ─── 演示数据 (独立标记 demo_seeded, 基础库可后补, 不受 seeded 门限制) ───
-  if (env?.DEMO_SEED === '1') {
-    const demo = await db.prepare('SELECT value FROM settings WHERE key = ?').bind('demo_seeded').first();
-    if (!demo) {
-      console.log('  [DEMO_SEED] 初始化演示数据 (文章/标签/页面/评论)...');
-      await seedDemoData(db);
-      await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('demo_seeded', '1').run();
-    }
-  }
-
-  // Check if already seeded
+  // Check if already seeded (基础段只执行一次)
   const existing = await db.prepare('SELECT value FROM settings WHERE key = ?').bind('seeded').first();
-  if (existing) return;
 
-  console.log('Seeding database...');
+  if (!existing) {
+    console.log('Seeding database...');
 
   // ─── Settings (基础) ─────────────────────────────────────
   // 密码: 默认 admin123, 生产可通过 ADMIN_PASSWORD 注入覆盖; 标记引导改密
@@ -119,9 +109,21 @@ export async function seedDatabase(db: D1Database, env?: { ADMIN_PASSWORD?: stri
   await db.prepare('INSERT OR IGNORE INTO categories VALUES (?,?,?,?)').bind('reading', '阅读', '读书笔记、阅读方法、书单推荐', 4).run();
   await db.prepare('INSERT OR IGNORE INTO categories VALUES (?,?,?,?)').bind('life', '生活', '日常观察、工作方式、远程办公体验', 5).run();
 
-  // Mark as seeded
-  await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('seeded', '1').run();
-  console.log('Seeding complete!');
+    // Mark as seeded
+    await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('seeded', '1').run();
+    console.log('Seeding complete!');
+  }
+
+  // ─── 演示数据 (在基础段之后, 依赖 categories 已存在; 独立标记 demo_seeded,
+  // 基础库可后补演示数据) ────────────────────────────────
+  if (env?.DEMO_SEED === '1') {
+    const demo = await db.prepare('SELECT value FROM settings WHERE key = ?').bind('demo_seeded').first();
+    if (!demo) {
+      console.log('  [DEMO_SEED] 初始化演示数据 (文章/标签/页面/评论)...');
+      await seedDemoData(db);
+      await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('demo_seeded', '1').run();
+    }
+  }
 }
 
 /** 演示数据: 供本地开发与自动化测试使用 (生产安装不填充) */
