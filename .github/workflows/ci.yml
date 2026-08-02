@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: code/package-lock.json
+
+      - name: Install dependencies
+        working-directory: code
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: code
+        run: npx playwright install --with-deps chromium
+
+      - name: Type check
+        working-directory: code
+        run: npx tsc --noEmit
+
+      - name: Start dev server
+        working-directory: code
+        run: |
+          npx wrangler dev --local --port 8787 --var DEMO_SEED:1 > /tmp/wrangler.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8787/ > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:8787/ > /dev/null
+
+      - name: API integration tests
+        working-directory: code
+        run: npm run test:api
+
+      - name: UI tests
+        working-directory: code
+        run: npx playwright test
+
+      - name: Verify production-mode seed (base data, no DEMO_SEED)
+        working-directory: code
+        run: |
+          npx wrangler dev --local --port 8788 --persist-to .wrangler/prod-check > /tmp/wrangler-prod.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8788/ > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:8788/ > /dev/null
+          # 默认密码 admin123 可登录
+          curl -sf -X POST http://localhost:8788/api/auth/login \
+            -H "Content-Type: application/json" -d '{"password":"admin123"}' \
+            -c /tmp/prod-cookie.txt > /dev/null
+          # 基础模式: 0 篇文章, 5 个分类, 无演示内容
+          test "$(curl -sf -b /tmp/prod-cookie.txt http://localhost:8788/api/posts | grep -o '"slug"' | wc -l)" = "0"
+          test "$(curl -sf -b /tmp/prod-cookie.txt http://localhost:8788/api/categories | grep -o '"slug"' | wc -l)" = "5"
+          test "$(curl -sf -b /tmp/prod-cookie.txt http://localhost:8788/api/tags | grep -o '"slug"' | wc -l)" = "0"
+          echo "生产模式基础数据验证通过"

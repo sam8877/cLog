@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>归档 · 静思录</title>
+  <style>
+    :root {
+      --bg: #ffffff; --surface: #ffffff; --surface-warm: var(--surface);
+      --fg: #171717; --fg-2: #4d4d4d; --muted: #666666; --meta: #808080;
+      --border: rgba(0, 0, 0, 0.08); --border-soft: rgba(0, 0, 0, 0.04);
+      --accent: #0070f3; --accent-on: #ffffff;
+      --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+      --accent-hover: color-mix(in oklch, var(--accent) 88%, black);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --font-display: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-body: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco, monospace;
+      --fs-h1: clamp(32px, 3.5vw, 48px); --fs-h2: clamp(22px, 2vw, 30px);
+      --fs-h3: 20px; --fs-body: 16px; --fs-sm: 14px; --fs-meta: 13px;
+      --gap-xs: 8px; --gap-sm: 12px; --gap-md: 20px; --gap-lg: 32px; --gap-xl: 56px; --gap-2xl: 96px;
+      --container: 900px; --gutter: 24px;
+      --radius: 8px; --radius-lg: 12px;
+      --elev-raised: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 2px rgba(0,0,0,0.04), 0 8px 8px -8px rgba(0,0,0,0.04), 0 0 0 1px #fafafa;
+      --motion-fast: 150ms; --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    }
+    [data-theme="dark"] {
+      --bg: #0a0a0a; --surface: #171717; --surface-warm: #171717;
+      --fg: #fafafa; --fg-2: #a1a1a1; --muted: #a1a1a1; --meta: #808080;
+      --border: rgba(255, 255, 255, 0.08); --border-soft: rgba(255, 255, 255, 0.04);
+      --accent: #3399ff; --accent-on: #0a0a0a;
+      --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 8%, transparent);
+      --elev-raised: 0 0 0 1px rgba(255,255,255,0.08), 0 2px 2px rgba(0,0,0,0.2), 0 8px 8px -8px rgba(0,0,0,0.2), 0 0 0 1px #1a1a1a;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:var(--fs-body);line-height:1.6;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+    img,svg{display:block;max-width:100%}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit;cursor:pointer;border:0;background:none}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    p{text-wrap:pretty}h1,h2,h3{text-wrap:balance}
+    .container{max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter)}
+    .row-between{display:flex;align-items:center;justify-content:space-between;gap:var(--gap-md);flex-wrap:wrap}
+    h1{font-family:var(--font-display);font-size:var(--fs-h1);line-height:1.12;letter-spacing:-0.02em;margin:0}
+    h2{font-family:var(--font-display);font-size:var(--fs-h2);line-height:1.2;letter-spacing:-0.015em;margin:0}
+    .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--meta)}
+    .lead{font-size:17px;line-height:1.55;color:var(--muted);max-width:40ch;margin:0}
+
+    .topnav{position:sticky;top:0;z-index:10;background:color-mix(in oklch,var(--bg) 92%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+    .topnav-inner{display:flex;align-items:center;justify-content:space-between;padding-block:14px}
+    .topnav .logo{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+    .topnav .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .topnav nav{display:flex;gap:var(--gap-lg);align-items:center}
+    .topnav nav a{font-size:14px;color:var(--muted);transition:color var(--motion-fast)}
+    .topnav nav a:hover,.topnav nav a.active{color:var(--fg)}
+    .topnav nav a.admin-link{color:var(--accent)}
+    .topnav nav a.admin-link:hover{color:var(--fg)}
+    .theme-toggle{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius);border:1px solid var(--border);color:var(--muted);font-size:16px;transition:all var(--motion-fast)}
+    .theme-toggle:hover{color:var(--fg);border-color:var(--fg)}
+    .hamburger{display:none;width:36px;height:36px;place-items:center;border-radius:var(--radius);border:1px solid var(--border);color:var(--fg);font-size:18px}
+    @media(max-width:700px){.topnav nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--surface);border-bottom:1px solid var(--border);padding:var(--gap-md);gap:var(--gap-sm)}.topnav nav.open{display:flex}.hamburger{display:grid}}
+
+    .page-header{padding:clamp(36px,5vw,64px) 0 var(--gap-lg);text-align:center}
+    .page-header h1{margin-bottom:var(--gap-sm)}
+
+    /* tabs */
+    .tabs{display:flex;gap:0;margin-bottom:var(--gap-xl);border-bottom:2px solid var(--border)}
+    .tab-btn{padding:10px 24px;font-size:15px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all var(--motion-fast)}
+    .tab-btn:hover{color:var(--fg)}
+    .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    /* tag cloud */
+    .tag-cloud{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:var(--gap-xl)}
+    .tag-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:999px;font-size:14px;color:var(--muted);transition:all var(--motion-fast)}
+    .tag-pill:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+    .tag-pill .count{font-family:var(--font-mono);font-size:11px;color:var(--meta);background:var(--fg-soft);padding:1px 6px;border-radius:999px}
+    .tag-pill.lg{font-size:17px;padding:8px 20px}
+    .tag-pill.md{font-size:15px}
+
+    /* category list */
+    .cat-list{display:flex;flex-direction:column;gap:var(--gap-sm)}
+    .cat-row{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);transition:box-shadow var(--motion-fast)}
+    .cat-row:hover{box-shadow:var(--elev-raised)}
+    .cat-row .cat-info h3{font-family:var(--font-display);font-size:18px;font-weight:500;margin:0}
+    .cat-row .cat-info p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+    .cat-row .cat-count{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--meta);white-space:nowrap}
+
+    /* filtered posts */
+    .filtered-posts{margin-top:var(--gap-xl);padding-top:var(--gap-lg);border-top:2px solid var(--border)}
+    .filtered-posts h3{font-family:var(--font-display);font-size:18px;font-weight:500;margin:0 0 var(--gap-md)}
+    .log-row{display:grid;grid-template-columns:100px 1fr;gap:var(--gap-md) var(--gap-lg);padding:16px 0;border-top:1px solid var(--border);align-items:baseline}
+    .log-row:first-child{border-top:0}
+    .log-row h4{font-family:var(--font-display);font-size:16px;font-weight:500;margin:0}
+    .log-row h4 a:hover{color:var(--accent)}
+    .log-row .date{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--meta);white-space:nowrap}
+    .tag{display:inline-flex;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:11px;color:var(--muted);margin-top:4px}
+    .empty-state{text-align:center;padding:var(--gap-xl);color:var(--meta)}
+
+    /* ─── pagination ────────────────────────────────────────────────── */
+    .pagination { display: flex; gap: 6px; justify-content: center; padding-top: var(--gap-lg); }
+    .pagination button {
+      width: 36px; height: 36px; display: grid; place-items: center;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; color: var(--muted); transition: all var(--motion-fast);
+    }
+    .pagination button:hover { border-color: var(--fg); color: var(--fg); }
+    .pagination button.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+    .pagefoot{padding-block:var(--gap-xl);color:var(--muted);font-size:13px;border-top:1px solid var(--border);text-align:center}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="container topnav-inner">
+      <a href="blog-home.html" class="logo"><span class="logo-dot"></span>静思录</a>
+      <button class="hamburger" id="hamburger" aria-label="菜单">☰</button>
+      <nav id="mainNav">
+        <a href="blog-home.html">首页</a>
+        <a href="blog-archive.html" class="active">归档</a>
+        <a href="blog-search.html">搜索</a>
+        <a href="blog-page.html">关于</a>
+        <a href="login.html" style="color:var(--muted);">登录</a>
+        <a href="admin.html" class="admin-link">管理</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">◐</button>
+    </div>
+  </header>
+
+  <main id="content">
+    <header class="page-header container" data-od-id="archive-header">
+      <h1>归档</h1>
+      <p class="lead" style="margin:var(--gap-sm) auto 0;">按时间、标签或分类浏览所有文章</p>
+    </header>
+
+    <section class="container" data-od-id="archive-content" style="padding-bottom:var(--gap-2xl);">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="all">全部文章</button>
+        <button class="tab-btn" data-tab="tags">标签</button>
+        <button class="tab-btn" data-tab="categories">分类</button>
+      </div>
+
+      <!-- All articles panel (chronological, paginated) -->
+      <div class="tab-panel active" id="panel-all">
+        <div id="all-results"></div>
+        <nav class="pagination" aria-label="分页">
+          <button type="button" class="active" aria-current="page">1</button>
+          <button type="button">2</button>
+          <button type="button">3</button>
+          <button type="button" style="width:auto; padding-inline:12px;">下一页 →</button>
+        </nav>
+      </div>
+
+      <!-- Tags panel -->
+      <div class="tab-panel" id="panel-tags">
+        <div class="tag-cloud">
+          <a class="tag-pill lg" href="#" data-tag="Rust">Rust <span class="count">5</span></a>
+          <a class="tag-pill lg" href="#" data-tag="CSS">CSS <span class="count">4</span></a>
+          <a class="tag-pill lg" href="#" data-tag="TypeScript">TypeScript <span class="count">4</span></a>
+          <a class="tag-pill md" href="#" data-tag="前端">前端 <span class="count">6</span></a>
+          <a class="tag-pill" href="#" data-tag="架构">架构 <span class="count">3</span></a>
+          <a class="tag-pill" href="#" data-tag="异步编程">异步编程 <span class="count">2</span></a>
+          <a class="tag-pill" href="#" data-tag="写作">写作 <span class="count">3</span></a>
+          <a class="tag-pill" href="#" data-tag="系统设计">系统设计 <span class="count">3</span></a>
+          <a class="tag-pill" href="#" data-tag="工具">工具 <span class="count">4</span></a>
+          <a class="tag-pill" href="#" data-tag="知识管理">知识管理 <span class="count">2</span></a>
+          <a class="tag-pill" href="#" data-tag="JavaScript">JavaScript <span class="count">3</span></a>
+          <a class="tag-pill" href="#" data-tag="效率">效率 <span class="count">2</span></a>
+          <a class="tag-pill" href="#" data-tag="创造力">创造力 <span class="count">1</span></a>
+          <a class="tag-pill" href="#" data-tag="设计">设计 <span class="count">2</span></a>
+        </div>
+        <div id="tag-results"></div>
+      </div>
+
+      <!-- Categories panel -->
+      <div class="tab-panel" id="panel-categories">
+        <div class="cat-list">
+          <a href="#" class="cat-row" data-cat="技术">
+            <div class="cat-info"><h3>技术</h3><p>编程语言、系统架构、前端工程实践</p></div>
+            <span class="cat-count">12 篇</span>
+          </a>
+          <a href="#" class="cat-row" data-cat="设计">
+            <div class="cat-info"><h3>设计</h3><p>交互设计、视觉系统、用户体验思考</p></div>
+            <span class="cat-count">5 篇</span>
+          </a>
+          <a href="#" class="cat-row" data-cat="写作">
+            <div class="cat-info"><h3>写作</h3><p>写作方法、创作心理、文字工艺</p></div>
+            <span class="cat-count">3 篇</span>
+          </a>
+          <a href="#" class="cat-row" data-cat="阅读">
+            <div class="cat-info"><h3>阅读</h3><p>读书笔记、阅读方法、书单推荐</p></div>
+            <span class="cat-count">4 篇</span>
+          </a>
+          <a href="#" class="cat-row" data-cat="生活">
+            <div class="cat-info"><h3>生活</h3><p>日常观察、工作方式、远程办公体验</p></div>
+            <span class="cat-count">2 篇</span>
+          </a>
+        </div>
+        <div id="cat-results"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container">
+      <span>© 静思录 · 2026</span>
+      <span class="meta" style="margin-left:12px;">← <a href="blog-home.html" style="color:var(--accent);">返回首页</a></span>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle
+    const html=document.documentElement,toggle=document.getElementById('themeToggle');
+    const stored=localStorage.getItem('blog-theme');
+    if(stored)html.setAttribute('data-theme',stored);
+    else if(window.matchMedia('(prefers-color-scheme:dark)').matches)html.setAttribute('data-theme','dark');
+    toggle.textContent=html.getAttribute('data-theme')==='dark'?'◑':'◐';
+    toggle.addEventListener('click',()=>{const n=html.getAttribute('data-theme')==='dark'?'light':'dark';html.setAttribute('data-theme',n);toggle.textContent=n==='dark'?'◑':'◐';localStorage.setItem('blog-theme',n)});
+
+    // Mobile nav
+    const h=document.getElementById('hamburger'),nav=document.getElementById('mainNav');
+    h.addEventListener('click',()=>{nav.classList.toggle('open');h.textContent=nav.classList.contains('open')?'✕':'☰'});
+
+    // Article data
+    const articles=[
+      {title:'构建一个个人知识管理系统',date:'2026-07-20',tag:'知识管理',cat:'技术'},
+      {title:'CSS Container Queries 实战',date:'2026-07-15',tag:'CSS',cat:'技术'},
+      {title:'Rust 中的异步运行时',date:'2026-07-08',tag:'Rust',cat:'技术'},
+      {title:'从零设计一个博客系统',date:'2026-06-28',tag:'架构',cat:'技术'},
+      {title:'TypeScript 5.6 新特性速览',date:'2026-06-20',tag:'TypeScript',cat:'技术'},
+      {title:'为什么你应该写"差"的初稿',date:'2026-06-12',tag:'写作',cat:'写作'},
+      {title:'从零构建一个迷你 React',date:'2026-06-01',tag:'JavaScript',cat:'技术'},
+      {title:'设计系统的颜色语义化',date:'2026-05-20',tag:'设计',cat:'设计'},
+      {title:'远程办公三年复盘',date:'2026-05-10',tag:'工具',cat:'生活'},
+      {title:'2026 技术书单推荐',date:'2026-04-15',tag:'阅读',cat:'阅读'},
+    ];
+
+    function renderList(containerId, items){
+      const el=document.getElementById(containerId);
+      if(!items.length){el.innerHTML='<div class="empty-state">暂无匹配文章</div>';return;}
+      el.innerHTML=`<div class="filtered-posts"><h3>${items.length} 篇文章</h3>`+
+        items.map(a=>`<article class="log-row"><span class="date">${a.date}</span><div><h4><a href="blog-post.html">${a.title}</a></h4><span class="tag">${a.tag}</span></div></article>`).join('')+'</div>';
+    }
+
+    // Show all articles chronologically
+    renderList('all-results',[...articles].sort((a,b)=>b.date.localeCompare(a.date)));
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+        // Clear all result divs on tab switch
+        ['tag-results','cat-results'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});
+      });
+    });
+
+    // Tag pill clicks — event delegation
+    document.getElementById('panel-tags').addEventListener('click',e=>{
+      const pill=e.target.closest('.tag-pill');
+      if(!pill)return;
+      e.preventDefault();
+      const tag=pill.dataset.tag;
+      renderList('tag-results',articles.filter(a=>a.tag===tag));
+    });
+
+    // Category row clicks — event delegation
+    document.getElementById('panel-categories').addEventListener('click',e=>{
+      const row=e.target.closest('.cat-row');
+      if(!row)return;
+      e.preventDefault();
+      const cat=row.dataset.cat;
+      renderList('cat-results',articles.filter(a=>a.cat===cat));
+    });
+  </script>
+</body>
+</html>

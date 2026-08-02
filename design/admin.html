@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理后台 · 静思录</title>
+  <style>
+    :root {
+      --bg: #ffffff; --surface: #ffffff; --surface-warm: var(--surface);
+      --fg: #171717; --fg-2: #4d4d4d; --muted: #666666; --meta: #707070;
+      --border: rgba(0, 0, 0, 0.08); --border-soft: rgba(0, 0, 0, 0.04);
+      --accent: #0070f3; --accent-on: #ffffff;
+      --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+      --accent-hover: color-mix(in oklch, var(--accent) 88%, black);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --success: #16a34a; --warn: #eab308; --danger: #dc2626;
+      --font-display: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-body: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco, monospace;
+      --fs-body: 15px; --fs-sm: 13px; --fs-meta: 12px;
+      --gap-xs: 6px; --gap-sm: 12px; --gap-md: 20px; --gap-lg: 28px;
+      --radius: 8px; --radius-lg: 12px;
+      --elev-raised: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 2px rgba(0,0,0,0.04), 0 8px 8px -8px rgba(0,0,0,0.04), 0 0 0 1px #fafafa;
+      --motion-fast: 150ms; --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --sidebar-w: 220px;
+    }
+    [data-theme="dark"] {
+      --bg: #0a0a0a; --surface: #171717; --surface-warm: #171717;
+      --fg: #fafafa; --fg-2: #a1a1a1; --muted: #a1a1a1; --meta: #808080;
+      --border: rgba(255, 255, 255, 0.08); --border-soft: rgba(255, 255, 255, 0.04);
+      --accent: #3399ff; --accent-on: #0a0a0a;
+      --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 8%, transparent);
+      --elev-raised: 0 0 0 1px rgba(255,255,255,0.08), 0 2px 2px rgba(0,0,0,0.2), 0 8px 8px -8px rgba(0,0,0,0.2), 0 0 0 1px #1a1a1a;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:var(--fs-body);line-height:1.55;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit;cursor:pointer;border:0;background:none}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    h1,h2,h3{margin:0}
+    h2{font-family:var(--font-display);font-size:22px;font-weight:500;line-height:1.2;letter-spacing:-0.01em}
+    h3{font-family:var(--font-display);font-size:18px;font-weight:500}
+    .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--meta);letter-spacing:0.01em}
+
+    /* ─── sidebar ──────────────────────────────────────────────────── */
+    .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:20;overflow-y:auto;transition:transform var(--motion-fast) var(--ease-standard)}
+    .sidebar-brand{display:flex;align-items:center;gap:8px;padding:18px var(--gap-md);font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-0.01em;border-bottom:1px solid var(--border)}
+    .sidebar-brand span{font-size:12px;color:var(--meta);font-weight:400;font-family:var(--font-mono);margin-left:auto}
+    .sidebar-nav{flex:1;padding:var(--gap-sm) 0;display:flex;flex-direction:column;gap:2px}
+    .sidebar-nav a,.sidebar-nav button{display:flex;align-items:center;gap:10px;padding:9px var(--gap-md);font-size:14px;color:var(--muted);transition:all var(--motion-fast);border-radius:0;text-align:left;width:100%}
+    .sidebar-nav a:hover,.sidebar-nav button:hover{color:var(--fg);background:var(--fg-soft)}
+    .sidebar-nav a.active,.sidebar-nav button.active{color:var(--accent);background:var(--accent-soft);font-weight:500}
+    .nav-icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+    .nav-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+    .sidebar-footer{padding:var(--gap-md);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:var(--gap-xs)}
+    .sidebar-footer a,.sidebar-footer button{font-size:var(--fs-sm);color:var(--meta);padding:6px 0;text-align:left;width:100%}
+    .sidebar-footer a:hover,.sidebar-footer button:hover{color:var(--fg)}
+    .sidebar-back{color:var(--accent)!important}
+
+    /* ─── main area ────────────────────────────────────────────────── */
+    .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+    .main-header{padding:14px var(--gap-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:5}
+    .main-header h1{margin:0;font-family:var(--font-display);font-size:22px;font-weight:500;line-height:1.2;letter-spacing:-0.01em}
+    .header-actions{display:flex;gap:var(--gap-sm);align-items:center}
+    .main-body{flex:1;padding:var(--gap-lg)}
+    .mobile-sidebar-toggle{display:none}
+
+    .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:15;backdrop-filter:blur(2px)}
+    @media(max-width:860px){
+      .sidebar{transform:translateX(-100%)}
+      .sidebar.open{transform:translateX(0)}
+      .sidebar-backdrop.show{display:block}
+      .main{margin-left:0}
+      .mobile-sidebar-toggle{display:inline-flex}
+      .main-body{padding:var(--gap-sm)}
+    }
+
+    /* ─── buttons ──────────────────────────────────────────────────── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);font-size:13px;font-weight:500;letter-spacing:0.02em;transition:all var(--motion-fast) var(--ease-standard)}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--fg);color:var(--accent-on);border-color:var(--fg)}
+    .btn-primary:hover{background:color-mix(in oklch,var(--fg) 86%,black);border-color:color-mix(in oklch,var(--fg) 86%,black)}
+    .btn-secondary{background:transparent;color:var(--fg);border-color:var(--border)}
+    .btn-secondary:hover{border-color:var(--fg)}
+    .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+    .btn-danger:hover{background:var(--danger);color:var(--accent-on)}
+    .btn-sm{padding:5px 10px;font-size:12px;letter-spacing:0.02em}
+    .btn-ghost{padding:4px 8px;border-color:transparent;color:var(--muted)}
+    .btn-ghost:hover{color:var(--fg)}
+
+    /* ─── cards ────────────────────────────────────────────────────── */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+    .stat-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:var(--gap-md);margin-bottom:var(--gap-lg)}
+    @media(max-width:900px){.stat-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:500px){.stat-grid{grid-template-columns:1fr}}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:box-shadow var(--motion-fast) var(--ease-standard)}
+    .stat-card:hover{box-shadow:var(--elev-raised)}
+    .stat-card .stat-num{font-family:var(--font-display);font-size:36px;font-weight:500;color:var(--accent);line-height:1}
+    .stat-card .stat-label{font-size:var(--fs-sm);color:var(--meta);margin-top:4px}
+    .stat-hero .stat-num{font-size:48px}
+    .stat-hero{grid-row:span 2;display:flex;flex-direction:column;justify-content:center}
+    .stat-hero .stat-label{font-size:14px}
+    .stat-sub{display:flex;flex-direction:column;gap:4px}
+    .stat-link{font-size:12px;color:var(--accent);font-weight:500;margin-top:2px;display:inline-flex;align-items:center;gap:4px}
+    .stat-link:hover{text-decoration:underline}
+    .stat-warn{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:4px;vertical-align:middle}
+    .activity-cta{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;margin-left:auto;white-space:nowrap}
+    .activity-cta:hover{text-decoration:underline}
+
+    /* ─── table ────────────────────────────────────────────────────── */
+    .ds-table{width:100%;border-collapse:collapse;font-size:13px}
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .ds-table th,.ds-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+    .ds-table th{color:var(--meta);font-weight:500;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap}
+    .ds-table tbody tr:hover{background:var(--fg-soft)}
+    .ds-table .actions-cell{text-align:right;white-space:nowrap}
+
+    /* ─── badge ────────────────────────────────────────────────────── */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;font-family:var(--font-mono);letter-spacing:0.02em}
+    .badge-published{background:color-mix(in oklch,var(--success) 15%,transparent);color:var(--success)}
+    .badge-draft{background:color-mix(in oklch,var(--warn) 15%,transparent);color:color-mix(in oklch,var(--warn) 60%,var(--fg))}
+    .badge-pending{background:color-mix(in oklch,var(--warn) 15%,transparent);color:color-mix(in oklch,var(--warn) 55%,var(--fg))}
+    .badge-approved{background:color-mix(in oklch,var(--success) 15%,transparent);color:var(--success)}
+    .badge-spam{background:color-mix(in oklch,var(--danger) 12%,transparent);color:var(--danger)}
+
+    /* ─── form ─────────────────────────────────────────────────────── */
+    .field{display:flex;flex-direction:column;gap:5px;margin-bottom:var(--gap-md)}
+    .field label{font-size:12px;color:var(--meta);font-weight:500;text-transform:uppercase;letter-spacing:0.06em}
+    .field input,.field textarea,.field select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--fg);font:inherit;font-size:14px}
+    .field textarea{min-height:100px;resize:vertical;line-height:1.6}
+    .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-md)}
+    @media(max-width:600px){.form-row{grid-template-columns:1fr}}
+    .editor-layout{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-md);min-height:400px}
+    .editor-layout.pure-mode{grid-template-columns:1fr}
+    @media(max-width:900px){.editor-layout,.editor-layout.pure-mode{grid-template-columns:1fr}}
+
+    /* ─── markdown preview ─────────────────────────────────────────── */
+    .md-preview{border:1px solid var(--border);border-radius:var(--radius);padding:var(--gap-md);background:var(--surface);overflow-y:auto;max-height:500px;line-height:1.65}
+    .md-preview h1,.md-preview h2,.md-preview h3{font-family:var(--font-display);margin:var(--gap-md) 0 var(--gap-sm)}
+    .md-preview h1{font-size:24px}.md-preview h2{font-size:20px}.md-preview h3{font-size:17px}
+    .md-preview p{margin:0 0 var(--gap-sm)}
+    .md-preview code{font-family:var(--font-mono);font-size:13px;background:var(--fg-soft);padding:2px 6px;border-radius:3px;color:var(--accent)}
+    .md-preview pre{background:var(--surface-warm);border:1px solid var(--border);border-radius:var(--radius);padding:var(--gap-sm);overflow-x:auto}
+    .md-preview pre code{background:none;padding:0;color:var(--fg)}
+    .md-preview blockquote{border-left:3px solid var(--accent);margin:var(--gap-sm) 0;padding:var(--gap-xs) var(--gap-md);color:var(--muted)}
+
+    /* ─── media grid ───────────────────────────────────────────────── */
+    .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--gap-sm)}
+    .media-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:box-shadow var(--motion-fast)}
+    .media-card:hover{box-shadow:var(--elev-raised)}
+    .media-thumb{aspect-ratio:1;background:linear-gradient(135deg,var(--accent-soft),var(--fg-soft));display:grid;place-items:center;font-family:var(--font-mono);font-size:40px;color:var(--meta)}
+    .media-info{padding:10px 12px}
+    .media-info .fn{font-size:12px;font-weight:500;margin-bottom:2px;word-break:break-all}
+    .media-info .sz{font-size:11px;color:var(--meta)}
+
+    /* ─── editor toolbar buttons ──────────────────────────────────── */
+    .md-tb-btn{width:30px;height:28px;display:grid;place-items:center;border-radius:4px;font-size:13px;color:var(--muted);transition:all var(--motion-fast)}
+    .md-tb-btn:hover{background:var(--fg-soft);color:var(--fg)}
+
+    /* ─── view toggle ──────────────────────────────────────────────── */
+    .admin-view{display:none}
+    .admin-view.active{display:block}
+    .row-between{display:flex;align-items:center;justify-content:space-between}
+
+    /* ─── settings layout ──────────────────────────────────────────── */
+    .settings-layout{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-md);align-items:start}
+    @media(max-width:700px){.settings-layout{grid-template-columns:1fr}}
+
+    /* ─── pref message transition ──────────────────────────────────── */
+    .pref-msg{display:none;padding:10px 14px;border-radius:var(--radius);margin-bottom:var(--gap-md);font-size:13px}
+    .pref-msg.show{display:block}
+
+    /* ─── comment filter pills ─────────────────────────────────────── */
+    .filter-group{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:var(--gap-md)}
+    .filter-btn{padding:6px 14px;font-size:12px;color:var(--muted);background:transparent;border:none;border-right:1px solid var(--border);cursor:pointer;transition:all var(--motion-fast);font-weight:500}
+    .filter-btn:last-child{border-right:none}
+    .filter-btn:hover{color:var(--fg);background:var(--fg-soft)}
+    .filter-btn.active{color:var(--fg);background:var(--fg-soft)}
+
+    /* ─── comment moderation ───────────────────────────────────────── */
+    .comment-row{padding:var(--gap-sm) 0;border-bottom:1px solid var(--border)}
+    .comment-row:last-child{border-bottom:0}
+    .comment-meta-row{display:flex;gap:var(--gap-sm);align-items:center;margin-bottom:4px;flex-wrap:wrap}
+    .comment-body-text{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:8px}
+    .empty-state{padding:40px 20px;text-align:center;color:var(--meta);font-size:13px;line-height:1.6}
+    .empty-state-icon{margin-bottom:12px;font-size:32px;opacity:0.35}
+    .reply-form{margin-top:8px;padding:10px 12px;background:var(--fg-soft);border-radius:var(--radius)}
+    .reply-form textarea{width:100%;min-height:60px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--fg);font:inherit;font-size:13px;resize:vertical;line-height:1.5}
+    .reply-form textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+    .reply-actions{display:flex;gap:6px;margin-top:6px}
+    .reply-entry{margin:6px 0 6px 20px;padding:8px 10px;background:var(--fg-soft);border-radius:var(--radius);font-size:13px;line-height:1.5;border-left:3px solid var(--accent-soft)}
+    .reply-entry .reply-meta{font-size:11px;color:var(--meta);margin-top:4px}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+  <!-- Sidebar backdrop (mobile) -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="blog-home.html" style="display:flex;align-items:center;gap:8px;"><span id="brandName">静思录</span></a><span>管理</span></div>
+    <nav class="sidebar-nav">
+      <a href="#" class="active" aria-current="page" data-view="dashboard"><span class="nav-icon"><svg viewBox="0 0 20 20"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></span>仪表盘</a>
+      <a href="#" data-view="editor"><span class="nav-icon"><svg viewBox="0 0 20 20"><path d="M13 3l4 4L7 17H3v-4L13 3z"/><line x1="11" y1="5" x2="14" y2="8"/></svg></span>写文章</a>
+      <a href="#" data-view="posts"><span class="nav-icon"><svg viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" rx="2"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="13" y2="11"/></svg></span>文章管理</a>
+      <a href="#" data-view="pages"><span class="nav-icon"><svg viewBox="0 0 20 20"><rect x="3" y="2" width="14" height="16" rx="2"/><line x1="7" y1="6" x2="13" y2="6"/></svg></span>页面管理</a>
+      <a href="#" data-view="comments"><span class="nav-icon"><svg viewBox="0 0 20 20"><path d="M3 5h14v9a2 2 0 01-2 2H7l-4 3V5z"/></svg></span>评论管理</a>
+      <a href="#" data-view="tags"><span class="nav-icon"><svg viewBox="0 0 20 20"><path d="M8 3l-1 7H4l-.5 3h3l-1 4h2.5l1-4h4l1-4h-4l.5-3H8z"/></svg></span>标签管理</a>
+      <a href="#" data-view="categories"><span class="nav-icon"><svg viewBox="0 0 20 20"><path d="M3 5a2 2 0 012-2h3l2 3h7a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V5z"/></svg></span>分类管理</a>
+      <a href="#" data-view="media"><span class="nav-icon"><svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="14" rx="2"/><circle cx="7.5" cy="8.5" r="1.5"/><path d="M2 14l4.5-4 3 2.5L14 7l4 7"/></svg></span>媒体库</a>
+      <a href="#" data-view="settings"><span class="nav-icon"><svg viewBox="0 0 20 20"><rect x="5" y="8" width="10" height="9" rx="2"/><path d="M7 8V6a3 3 0 016 0v2"/><circle cx="10" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg></span>设置</a>
+    </nav>
+    <footer class="sidebar-footer">
+      <button type="button" id="themeToggle2" aria-label="切换暗色模式" style="display:flex;align-items:center;gap:8px;">
+        <svg id="themeIconLight2" width="16" height="16" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;flex-shrink:0;"><circle cx="10" cy="10" r="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="10" y1="16" x2="10" y2="18"/><line x1="2" y1="10" x2="4" y2="10"/><line x1="16" y1="10" x2="18" y2="10"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="14.4" y1="14.4" x2="15.8" y2="15.8"/><line x1="4.2" y1="15.8" x2="5.6" y2="14.4"/><line x1="14.4" y1="5.6" x2="15.8" y2="4.2"/></svg>
+        <svg id="themeIconDark2" width="16" height="16" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;flex-shrink:0;display:none;"><path d="M10 3a7 7 0 100 14 5 5 0 110-14z"/></svg>
+        切换暗色模式</button>
+      <a href="blog-home.html" class="sidebar-back">← 返回博客</a>
+    </footer>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="main-header">
+      <div style="display:flex;align-items:center;gap:var(--gap-sm);">
+        <button class="btn btn-secondary btn-sm mobile-sidebar-toggle" id="sidebarToggle" aria-expanded="false" aria-controls="sidebar" style="padding:4px 8px;"><svg width="16" height="16" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;"><line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/></svg></button>
+        <h1 id="viewTitle" tabindex="-1">仪表盘</h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary btn-sm" onclick="switchView('editor')" id="newPostBtn">+ 新建文章</button>
+        <button class="theme-toggle btn btn-secondary btn-sm" id="themeToggle" aria-label="切换暗色模式" style="padding:4px 8px;">
+          <svg id="themeIconLight" width="16" height="16" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;"><circle cx="10" cy="10" r="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="10" y1="16" x2="10" y2="18"/><line x1="2" y1="10" x2="4" y2="10"/><line x1="16" y1="10" x2="18" y2="10"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="14.4" y1="14.4" x2="15.8" y2="15.8"/><line x1="4.2" y1="15.8" x2="5.6" y2="14.4"/><line x1="14.4" y1="5.6" x2="15.8" y2="4.2"/></svg>
+          <svg id="themeIconDark" width="16" height="16" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;display:none;"><path d="M10 3a7 7 0 100 14 5 5 0 110-14z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <!-- Dashboard -->
+      <div class="admin-view active" id="view-dashboard" data-od-id="dashboard">
+        <div class="stat-grid">
+          <div class="stat-card stat-hero">
+            <div class="stat-num">24</div>
+            <div class="stat-label">已发布文章</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--meta);line-height:1.5;">本月新增 <strong style="color:var(--fg);">3</strong> 篇 · 累计写作 <strong style="color:var(--fg);">18</strong> 天</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">3</div>
+            <div class="stat-label">草稿</div>
+            <a href="#" class="stat-link" onclick="switchView('editor');return false;">继续写作 →</a>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">18</div>
+            <div class="stat-label">总评论</div>
+            <a href="#" class="stat-link" onclick="switchView('comments');return false;"><span class="stat-warn"></span>2 条待审核 →</a>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:var(--fg-2);">5</div>
+            <div class="stat-label">分类 · 14 标签</div>
+            <a href="#" class="stat-link" onclick="switchView('categories');return false;">管理分类 →</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row-between" style="margin-bottom:var(--gap-sm);">
+            <h3>最近动态</h3>
+            <a href="#" class="stat-link" onclick="switchView('posts');return false;">查看全部 →</a>
+          </div>
+          <div class="table-wrap"><table class="ds-table">
+            <thead><tr><th>时间</th><th>事件</th><th>详情</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="meta">07-21 18:05</span></td>
+                <td><span class="badge badge-pending">待审核</span></td>
+                <td>李华 在《构建一个个人知识管理系统》发表了评论</td>
+                <td class="actions-cell"><a href="#" class="activity-cta" onclick="switchView('comments');return false;">处理 →</a></td>
+              </tr>
+              <tr>
+                <td><span class="meta">07-20 10:30</span></td>
+                <td><span class="badge badge-published">已发布</span></td>
+                <td>《构建一个个人知识管理系统》</td>
+                <td class="actions-cell"><a href="blog-post.html" class="activity-cta">查看 →</a></td>
+              </tr>
+              <tr>
+                <td><span class="meta">07-15 16:20</span></td>
+                <td><span class="badge badge-published">已发布</span></td>
+                <td>《CSS Container Queries 实战》</td>
+                <td class="actions-cell"><a href="blog-post.html" class="activity-cta">查看 →</a></td>
+              </tr>
+              <tr>
+                <td><span class="meta">07-14 09:00</span></td>
+                <td><span class="badge badge-published">已发布</span></td>
+                <td>「关于」页面已更新</td>
+                <td class="actions-cell"><a href="#" class="activity-cta" onclick="switchView('pages');return false;">编辑 →</a></td>
+              </tr>
+              <tr>
+                <td><span class="meta">07-10 22:15</span></td>
+                <td><span class="badge badge-draft">草稿</span></td>
+                <td>《Rust 中的异步运行时》</td>
+                <td class="actions-cell"><a href="#" class="activity-cta" onclick="switchView('editor');return false;">继续 →</a></td>
+              </tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Editor -->
+      <div class="admin-view" id="view-editor" data-od-id="editor">
+        <div class="card" style="margin-bottom:var(--gap-md);">
+          <div class="form-row">
+            <div class="field"><label>文章标题</label><input type="text" id="postTitle" placeholder="输入文章标题…" value="无标题文章" /></div>
+            <div class="field"><label>Slug</label><input type="text" id="postSlug" placeholder="url-friendly-slug" /></div>
+          </div>
+        </div>
+        <div class="editor-layout" id="editorLayout">
+          <div class="field" id="editorInputCol" style="margin-bottom:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <label>Markdown 内容</label>
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--meta);" id="wordCount">字数: 0 · 字符: 0</span>
+            </div>
+            <!-- Editor toolbar -->
+            <div style="display:flex;gap:2px;padding:6px 0;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:6px;">
+              <button type="button" class="md-tb-btn" data-action="bold" title="加粗 (Ctrl+B)"><strong>B</strong></button>
+              <button type="button" class="md-tb-btn" data-action="italic" title="斜体 (Ctrl+I)"><em>I</em></button>
+              <button type="button" class="md-tb-btn" data-action="code" title="行内代码">&lt;/&gt;</button>
+              <button type="button" class="md-tb-btn" data-action="link" title="链接"><svg width="14" height="14" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 11l5-5"/><path d="M14 4h-4l3.5 3.5"/><path d="M7 6H5a3 3 0 000 6h2"/><path d="M13 14h2a3 3 0 000-6h-2"/></svg></button>
+              <button type="button" class="md-tb-btn" data-action="heading" title="标题">H</button>
+              <button type="button" class="md-tb-btn" data-action="quote" title="引用">"</button>
+              <button type="button" class="md-tb-btn" data-action="list" title="无序列表">•</button>
+              <button type="button" class="md-tb-btn" data-action="image" title="图片"><svg width="14" height="14" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="7.5" cy="8.5" r="1.5"/><path d="M2.5 14.5l4.5-4 3 2.5L14.5 8l3 3.5"/></svg></button>
+            </div>
+            <textarea id="mdEditor" style="min-height:400px;font-family:var(--font-mono);font-size:13px;line-height:1.65;" placeholder="用 Markdown 书写…"># 欢迎使用 Markdown 编辑器
+
+这是一段**粗体**文字和 *斜体* 文字。
+
+## 代码示例
+
+```rust
+fn main() {
+    println!("Hello, 静思录!");
+}
+```
+
+> 引用一段有启发性的话。
+
+- 列表项 1
+- 列表项 2
+- 列表项 3</textarea>
+          </div>
+          <div id="editorPreviewCol">
+            <label id="previewLabel" style="font-size:12px;color:var(--meta);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:5px;">实时预览</label>
+            <div class="md-preview" id="mdPreview"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:var(--gap-md);">
+          <div class="form-row">
+            <div class="field"><label>分类</label><select><option>技术</option><option>设计</option><option>写作</option><option>阅读</option><option>生活</option></select></div>
+            <div class="field"><label>标签（用逗号分隔）</label><input type="text" placeholder="Rust, 异步编程, 教程" id="postTags" /></div>
+          </div>
+          <div style="display:flex;gap:var(--gap-sm);margin-top:var(--gap-sm);">
+            <button type="button" class="btn btn-primary" onclick="alert('文章已发布（原型演示）');"><span style="font-size:14px;">↑</span> 发布</button>
+            <button type="button" class="btn btn-secondary" onclick="alert('草稿已保存（原型演示）');">保存草稿</button>
+            <button type="button" class="btn btn-ghost" onclick="alert('预览链接已复制（原型演示）');">🔗 预览</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Posts list -->
+      <div class="admin-view" id="view-posts" data-od-id="posts">
+        <div class="card">
+          <div class="table-wrap"><table class="ds-table">
+            <thead><tr><th>标题</th><th>状态</th><th>分类</th><th>日期</th><th class="actions-cell">操作</th></tr></thead>
+            <tbody>
+              <tr><td>构建一个个人知识管理系统</td><td><span class="badge badge-published">已发布</span></td><td>技术</td><td>2026-07-20</td><td class="actions-cell"><button type="button" class="btn btn-ghost btn-sm" onclick="switchView('editor')">编辑</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="if(confirm('确定删除？'))this.closest('tr').remove()">删除</button></td></tr>
+              <tr><td>CSS Container Queries 实战</td><td><span class="badge badge-published">已发布</span></td><td>技术</td><td>2026-07-15</td><td class="actions-cell"><button type="button" class="btn btn-ghost btn-sm" onclick="switchView('editor')">编辑</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="if(confirm('确定删除？'))this.closest('tr').remove()">删除</button></td></tr>
+              <tr><td>Rust 中的异步运行时</td><td><span class="badge badge-draft">草稿</span></td><td>技术</td><td>2026-07-08</td><td class="actions-cell"><button type="button" class="btn btn-ghost btn-sm" onclick="switchView('editor')">编辑</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="if(confirm('确定删除？'))this.closest('tr').remove()">删除</button></td></tr>
+              <tr><td>从零设计一个博客系统</td><td><span class="badge badge-published">已发布</span></td><td>技术</td><td>2026-06-28</td><td class="actions-cell"><button type="button" class="btn btn-ghost btn-sm" onclick="switchView('editor')">编辑</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="if(confirm('确定删除？'))this.closest('tr').remove()">删除</button></td></tr>
+              <tr><td>TypeScript 5.6 新特性速览</td><td><span class="badge badge-published">已发布</span></td><td>技术</td><td>2026-06-20</td><td class="actions-cell"><button type="button" class="btn btn-ghost btn-sm" onclick="switchView('editor')">编辑</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="if(confirm('确定删除？'))this.closest('tr').remove()">删除</button></td></tr>
+              <tr><td>为什么你应该写"差"的初稿</td><td><span class="badge badge-published">已发布</span></td><td>写作</td><td>2026-06-12</td><td class="actions-cell"><button type="button" class="btn btn-ghost btn-sm" onclick="switchView('editor')">编辑</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="if(confirm('确定删除？'))this.closest('tr').remove()">删除</button></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Pages -->
+      <div class="admin-view" id="view-pages" data-od-id="pages">
+        <div class="card">
+          <div class="table-wrap"><table class="ds-table">
+            <thead><tr><th>标题</th><th>Slug</th><th>状态</th><th>更新日期</th><th class="actions-cell">操作</th></tr></thead>
+            <tbody>
+              <tr><td>关于</td><td><span class="meta">about</span></td><td><span class="badge badge-published">已发布</span></td><td>2026-07-14</td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+              <tr><td>友链</td><td><span class="meta">links</span></td><td><span class="badge badge-published">已发布</span></td><td>2026-06-20</td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+              <tr><td>隐私政策</td><td><span class="meta">privacy</span></td><td><span class="badge badge-draft">草稿</span></td><td>—</td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button></td></tr>
+            </tbody>
+          </table></div>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-top:var(--gap-sm);">+ 新建页面</button>
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="admin-view" id="view-comments" data-od-id="comments">
+        <div class="card" style="margin-bottom:var(--gap-md);">
+          <div class="filter-group">
+            <button type="button" class="filter-btn active" data-filter="all">全部 <span class="filter-count" style="font-family:var(--font-mono);font-size:10px;color:var(--meta);margin-left:4px;">18</span></button>
+            <button type="button" class="filter-btn" data-filter="pending">待审核 <span class="filter-count" style="font-family:var(--font-mono);font-size:10px;color:var(--meta);margin-left:4px;">2</span></button>
+            <button type="button" class="filter-btn" data-filter="approved">已批准 <span class="filter-count" style="font-family:var(--font-mono);font-size:10px;color:var(--meta);margin-left:4px;">15</span></button>
+            <button type="button" class="filter-btn" data-filter="spam">垃圾 <span class="filter-count" style="font-family:var(--font-mono);font-size:10px;color:var(--meta);margin-left:4px;">1</span></button>
+          </div>
+          <div class="comment-row" data-status="pending">
+            <div class="comment-meta-row"><strong style="font-size:13px;">李华</strong><span class="meta">lihua@email.com</span><span class="meta">2026-07-21 14:32</span><span class="badge badge-pending">待审核</span></div>
+            <div class="comment-body-text">完全同意"用自己的话重写"这一点。我自己的经验是，如果读完一本书不能用三句话给别人讲清楚，等于没读。另外想问一下，你用的是什么全文搜索工具？</div>
+            <div style="font-size:11px;color:var(--meta);margin-bottom:4px;">在《构建一个个人知识管理系统》下</div>
+            <div style="display:flex;gap:4px;"><button type="button" class="btn btn-primary btn-sm">批准</button><button type="button" class="btn btn-secondary btn-sm">回复</button><button type="button" class="btn btn-danger btn-sm">垃圾</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div>
+          </div>
+          <div class="comment-row" style="margin-top:12px;" data-status="approved">
+            <div class="comment-meta-row"><strong style="font-size:13px;">张三</strong><span class="meta">zhangsan@test.com</span><span class="meta">2026-07-18 09:15</span><span class="badge badge-approved">已批准</span></div>
+            <div class="comment-body-text">好文章，收藏了。期待更多 Rust 相关的内容。</div>
+            <div style="font-size:11px;color:var(--meta);margin-bottom:4px;">在《Rust 中的异步运行时》下</div>
+            <div style="display:flex;gap:4px;"><button type="button" class="btn btn-secondary btn-sm">回复</button><button type="button" class="btn btn-danger btn-sm">垃圾</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div>
+          </div>
+          <div class="empty-state" id="commentsEmpty" style="display:none;">
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1;stroke-linecap:round;"><path d="M3 6h14v7a1.5 1.5 0 01-1.5 1.5H7l-3.5 2.5V6z"/></svg>
+            </div>
+            <div>暂无匹配的评论</div>
+            <div style="font-size:11px;margin-top:4px;">尝试切换其他筛选条件</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="admin-view" id="view-tags" data-od-id="tags">
+        <div class="card">
+          <div class="row-between" style="margin-bottom:var(--gap-md);">
+            <h3>所有标签</h3>
+            <div style="display:flex;gap:var(--gap-xs);align-items:center;">
+              <input type="text" placeholder="新标签名称…" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:140px;" />
+              <button type="button" class="btn btn-primary btn-sm">添加</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table class="ds-table">
+            <thead><tr><th>标签</th><th>Slug</th><th>文章数</th><th class="actions-cell">操作</th></tr></thead>
+            <tbody>
+              <tr><td>Rust</td><td><span class="meta">rust</span></td><td><span class="meta">5</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>CSS</td><td><span class="meta">css</span></td><td><span class="meta">4</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>TypeScript</td><td><span class="meta">typescript</span></td><td><span class="meta">4</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>前端</td><td><span class="meta">frontend</span></td><td><span class="meta">6</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>架构</td><td><span class="meta">architecture</span></td><td><span class="meta">3</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="admin-view" id="view-categories" data-od-id="categories">
+        <div class="card">
+          <div class="row-between" style="margin-bottom:var(--gap-md);">
+            <h3>所有分类</h3>
+            <button type="button" class="btn btn-primary btn-sm">+ 新建分类</button>
+          </div>
+          <div class="table-wrap"><table class="ds-table">
+            <thead><tr><th>分类</th><th>Slug</th><th>描述</th><th>文章数</th><th class="actions-cell">操作</th></tr></thead>
+            <tbody>
+              <tr><td>技术</td><td><span class="meta">tech</span></td><td>编程语言、系统架构、前端工程实践</td><td><span class="meta">12</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>设计</td><td><span class="meta">design</span></td><td>交互设计、视觉系统、用户体验思考</td><td><span class="meta">5</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>写作</td><td><span class="meta">writing</span></td><td>写作方法、创作心理、文字工艺</td><td><span class="meta">3</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>阅读</td><td><span class="meta">reading</span></td><td>读书笔记、阅读方法、书单推荐</td><td><span class="meta">4</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+              <tr><td>生活</td><td><span class="meta">life</span></td><td>日常观察、工作方式、远程办公体验</td><td><span class="meta">2</span></td><td class="actions-cell"><button class="btn btn-ghost btn-sm">编辑</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Media -->
+      <div class="admin-view" id="view-media" data-od-id="media">
+        <div class="row-between" style="margin-bottom:var(--gap-md);">
+          <h3>媒体库</h3>
+          <button type="button" class="btn btn-primary btn-sm">↑ 上传文件</button>
+        </div>
+        <div class="media-grid">
+          <div class="media-card"><div class="media-thumb">🖼</div><div class="media-info"><div class="fn">hero-image.png</div><div class="sz">1.2 MB · 2026-07-20</div><div class="media-actions"><button type="button" class="btn btn-ghost btn-sm">复制链接</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div></div></div>
+          <div class="media-card"><div class="media-thumb">🖼</div><div class="media-info"><div class="fn">profile-photo.jpg</div><div class="sz">340 KB · 2026-06-15</div><div class="media-actions"><button type="button" class="btn btn-ghost btn-sm">复制链接</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div></div></div>
+          <div class="media-card"><div class="media-thumb">📄</div><div class="media-info"><div class="fn">rust-async-diagram.svg</div><div class="sz">48 KB · 2026-07-08</div><div class="media-actions"><button type="button" class="btn btn-ghost btn-sm">复制链接</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div></div></div>
+          <div class="media-card"><div class="media-thumb">🖼</div><div class="media-info"><div class="fn">og-default.png</div><div class="sz">86 KB · 2026-05-10</div><div class="media-actions"><button type="button" class="btn btn-ghost btn-sm">复制链接</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div></div></div>
+          <div class="media-card"><div class="media-thumb">📄</div><div class="media-info"><div class="fn">architecture-overview.svg</div><div class="sz">22 KB · 2026-06-28</div><div class="media-actions"><button type="button" class="btn btn-ghost btn-sm">复制链接</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div></div></div>
+          <div class="media-card"><div class="media-thumb">🖼</div><div class="media-info"><div class="fn">favicon-512.png</div><div class="sz">18 KB · 2026-04-02</div><div class="media-actions"><button type="button" class="btn btn-ghost btn-sm">复制链接</button><button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);">删除</button></div></div></div>
+        </div>
+        <div class="media-empty-note" style="text-align:center;color:var(--meta);font-size:12px;margin-top:var(--gap-md);">图片上传后可在文章 Markdown 中引用，如 <code style="font-family:var(--font-mono);font-size:12px;">![描述](/media/xxx)</code>，复制链接即可插入</div>
+      </div>
+
+      <!-- Settings -->
+      <div class="admin-view" id="view-settings" data-od-id="settings">
+        <div class="settings-layout">
+          <!-- Account Security -->
+          <div class="card">
+            <h3 style="margin-bottom:var(--gap-xs);">账户安全</h3>
+            <p style="font-size:var(--fs-sm);color:var(--meta);margin:0 0 var(--gap-lg);">修改登录密码。密码更新后立即生效。</p>
+            <div id="pwdMsg" role="alert" style="display:none;padding:10px 14px;border-radius:var(--radius);margin-bottom:var(--gap-md);font-size:13px;"></div>
+            <div class="field">
+              <label>当前密码</label>
+              <input type="password" id="pwdCurrent" placeholder="输入当前密码" autocomplete="current-password" />
+            </div>
+            <div class="field">
+              <label>新密码</label>
+              <input type="password" id="pwdNew" placeholder="至少 8 个字符，包含字母和数字" autocomplete="new-password" />
+            </div>
+            <div class="field">
+              <label>确认新密码</label>
+              <input type="password" id="pwdConfirm" placeholder="再次输入新密码" autocomplete="new-password" />
+            </div>
+            <div style="display:flex;gap:var(--gap-sm);margin-top:var(--gap-sm);">
+              <button type="button" class="btn btn-primary" id="pwdSubmit">更新密码</button>
+              <button type="button" class="btn btn-secondary" id="pwdCancel">取消</button>
+            </div>
+          </div>
+          <!-- Preferences -->
+          <div class="card">
+            <h3 style="margin-bottom:var(--gap-xs);">偏好设置</h3>
+            <p style="font-size:var(--fs-sm);color:var(--meta);margin:0 0 var(--gap-lg);">调整博客外观与写作体验。</p>
+            <div id="prefMsg" role="status" class="pref-msg"></div>
+            <div class="field">
+              <label for="prefBlogTitle">博客标题</label>
+              <input type="text" id="prefBlogTitle" value="静思录" placeholder="博客名称" />
+            </div>
+            <div class="field">
+              <label for="prefTagline">副标题</label>
+              <input type="text" id="prefTagline" value="文字自有重量" placeholder="一句话描述你的博客" />
+            </div>
+            <div class="field">
+              <label for="prefPerPage">每页显示文章数</label>
+              <select id="prefPerPage">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="prefEditorMode">默认编辑器模式</label>
+              <select id="prefEditorMode">
+                <option value="split" selected>Markdown（分屏预览）</option>
+                <option value="pure">Markdown（纯编辑）</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:var(--gap-sm);margin-top:var(--gap-sm);">
+              <button type="button" class="btn btn-primary" id="prefSubmit">保存偏好</button>
+              <button type="button" class="btn btn-secondary" id="prefCancel">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // View switching
+    const views=['dashboard','editor','posts','pages','comments','tags','categories','media','settings'];
+    const titles={dashboard:'仪表盘',editor:'写文章',posts:'文章管理',pages:'页面管理',comments:'评论管理',tags:'标签管理',categories:'分类管理',media:'媒体库',settings:'设置'};
+
+    window.switchView=function(name){
+      document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('view-'+name).classList.add('active');
+      document.querySelectorAll('.sidebar-nav a').forEach(a=>{a.classList.remove('active');a.removeAttribute('aria-current');});
+      const activeLink=document.querySelector(`.sidebar-nav a[data-view="${name}"]`);
+      activeLink.classList.add('active');activeLink.setAttribute('aria-current','page');
+      document.getElementById('viewTitle').textContent=titles[name];
+      document.getElementById('newPostBtn').style.display=(name==='editor'||name==='settings')?'none':'';
+      // Close sidebar on mobile
+      closeSidebar();
+      // Re-apply comment filter if switching to comments view
+      if(name==='comments')applyFilter();
+      // Move focus to view heading for screen readers
+      document.getElementById('viewTitle').focus();
+    };
+
+    document.querySelectorAll('.sidebar-nav a').forEach(a=>{
+      a.addEventListener('click',e=>{e.preventDefault();switchView(a.dataset.view);});
+    });
+
+    // Mobile sidebar toggle
+    const sidebarEl=document.getElementById('sidebar');
+    const backdropEl=document.getElementById('sidebarBackdrop');
+    const sidebarToggle=document.getElementById('sidebarToggle');
+    function openSidebar(){sidebarEl.classList.add('open');backdropEl.classList.add('show');sidebarToggle.setAttribute('aria-expanded','true');}
+    function closeSidebar(){sidebarEl.classList.remove('open');backdropEl.classList.remove('show');sidebarToggle.setAttribute('aria-expanded','false');}
+    sidebarToggle.addEventListener('click',()=>{
+      sidebarEl.classList.contains('open')?closeSidebar():openSidebar();
+    });
+    backdropEl.addEventListener('click',closeSidebar);
+
+    // Markdown live preview
+    const mdEditor=document.getElementById('mdEditor');
+    const mdPreview=document.getElementById('mdPreview');
+    function updatePreview(){
+      let md=mdEditor.value;
+      md=md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // Headers
+      md=md.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+      md=md.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+      md=md.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+      // Bold / italic
+      md=md.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+      md=md.replace(/\*(.+?)\*/g,'<em>$1</em>');
+      // Code blocks
+      md=md.replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code>$2</code></pre>');
+      // Inline code
+      md=md.replace(/`([^`]+)`/g,'<code>$1</code>');
+      // Blockquote
+      md=md.replace(/^> (.+)$/gm,'<blockquote><p>$1</p></blockquote>');
+      // Lists
+      md=md.replace(/^- (.+)$/gm,'<li>$1</li>');
+      md=md.replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>');
+      // Paragraphs (lines not already wrapped)
+      md=md.replace(/^(?!<[hupblco])(.+)$/gm,'<p>$1</p>');
+      // Clean up empty
+      md=md.replace(/<p>\s*<\/p>/g,'');
+      mdPreview.innerHTML=md;
+    }
+    mdEditor.addEventListener('input',updatePreview);
+    updatePreview();
+
+    // Editor toolbar — insert Markdown at cursor
+    document.querySelectorAll('.md-tb-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const ta=mdEditor, s=ta.selectionStart, e=ta.selectionEnd, t=ta.value, sel=t.substring(s,e);
+        let pre='',post='';
+        switch(btn.dataset.action){
+          case'bold':pre='**';post='**';break;
+          case'italic':pre='*';post='*';break;
+          case'code':pre='`';post='`';break;
+          case'link':pre='[';post='](url)';break;
+          case'heading':pre='\n## ';post='';break;
+          case'quote':pre='\n> ';post='';break;
+          case'list':pre='\n- ';post='';break;
+          case'image':pre='![alt](',post=')';break;
+        }
+        ta.value=t.substring(0,s)+pre+(sel||'文本')+post+t.substring(e);
+        ta.focus();
+        ta.selectionStart=s+pre.length;
+        ta.selectionEnd=s+pre.length+(sel||2);
+        updatePreview();updateWordCount();
+      });
+    });
+
+    // Word count
+    const wordCounter=document.getElementById('wordCount');
+    function updateWordCount(){
+      const v=mdEditor.value, chars=v.length;
+      const words=v.trim()?v.trim().split(/\s+/).length:0;
+      wordCounter.textContent=`字数: ${words} · 字符: ${chars}`;
+    }
+    mdEditor.addEventListener('input',updateWordCount);
+    updateWordCount();
+
+    // Theme
+    const html=document.documentElement;
+    function setTheme(t){
+      html.setAttribute('data-theme',t);
+      const isDark=t==='dark';
+      document.getElementById('themeIconLight').style.display=isDark?'none':'inline';
+      document.getElementById('themeIconDark').style.display=isDark?'inline':'none';
+      document.getElementById('themeIconLight2').style.display=isDark?'none':'inline';
+      document.getElementById('themeIconDark2').style.display=isDark?'inline':'none';
+      localStorage.setItem('blog-theme',t);
+    }
+    const stored=localStorage.getItem('blog-theme');
+    if(stored)setTheme(stored);
+    else if(window.matchMedia('(prefers-color-scheme:dark)').matches)setTheme('dark');
+    else setTheme('light');
+    document.getElementById('themeToggle').addEventListener('click',()=>setTheme(html.getAttribute('data-theme')==='dark'?'light':'dark'));
+    document.getElementById('themeToggle2').addEventListener('click',()=>setTheme(html.getAttribute('data-theme')==='dark'?'light':'dark'));
+
+    // ── Comment actions (approve / reply / spam / delete) ────────
+    const commentsCard=document.getElementById('view-comments').querySelector('.card');
+    commentsCard.addEventListener('click',e=>{
+      const btn=e.target.closest('button');
+      if(!btn)return;
+      const row=btn.closest('.comment-row');
+      if(!row)return;
+      const badge=row.querySelector('.badge');
+      const actions=row.querySelector('div:last-child');
+      const text=btn.textContent.trim();
+
+      if(text==='批准'){
+        badge.textContent='已批准';
+        badge.className='badge badge-approved';
+        row.dataset.status='approved';
+        btn.remove();
+        applyFilter();updateFilterCounts();
+      }else if(text==='垃圾'){
+        badge.textContent='垃圾';
+        badge.className='badge badge-spam';
+        row.dataset.status='spam';
+        applyFilter();updateFilterCounts();
+      }else if(text==='删除'){
+        // Show inline confirm
+        const actionsDiv=btn.closest('div');
+        const originalHTML=actionsDiv.innerHTML;
+        actionsDiv.innerHTML='<span style="font-size:12px;color:var(--danger);margin-right:6px;">确认删除？</span><button type="button" class="btn btn-danger btn-sm confirm-yes">确认</button><button type="button" class="btn btn-ghost btn-sm confirm-no">取消</button>';
+        actionsDiv.querySelector('.confirm-yes').addEventListener('click',()=>{row.remove();applyFilter();updateFilterCounts();});
+        actionsDiv.querySelector('.confirm-no').addEventListener('click',()=>{actionsDiv.innerHTML=originalHTML;});
+      }else if(text==='回复'){
+        // Remove existing reply form if any
+        const existing=row.querySelector('.reply-form');
+        if(existing){existing.remove();return;}
+        // Create inline reply form
+        const form=document.createElement('div');
+        form.className='reply-form';
+        form.innerHTML='<textarea placeholder="写下回复…" rows="2"></textarea><div class="reply-actions"><button type="button" class="btn btn-primary btn-sm reply-submit">提交回复</button><button type="button" class="btn btn-secondary btn-sm reply-cancel">取消</button></div>';
+        row.appendChild(form);
+        form.querySelector('textarea').focus();
+        form.querySelector('.reply-cancel').addEventListener('click',()=>form.remove());
+        form.querySelector('.reply-submit').addEventListener('click',()=>{
+          const ta=form.querySelector('textarea');
+          const val=ta.value.trim();
+          if(!val){ta.focus();return;}
+          // Insert reply entry before the form
+          const entry=document.createElement('div');
+          entry.className='reply-entry';
+          const now=new Date();
+          const ts=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+          entry.innerHTML='<div>'+val.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div class="reply-meta">博主回复 · '+ts+'</div>';
+          form.parentNode.insertBefore(entry,form);
+          ta.value='';
+          ta.focus();
+        });
+      }
+    });
+
+    // ── Comment filter toggle ─────────────────────────────────────
+    function applyFilter(){
+      const active=document.querySelector('.filter-btn.active');
+      if(!active)return;
+      const filter=active.dataset.filter;
+      let visible=0;
+      document.querySelectorAll('.comment-row').forEach(r=>{
+        const match=filter==='all'||r.dataset.status===filter;
+        r.style.display=match?'':'none';
+        if(match)visible++;
+      });
+      document.getElementById('commentsEmpty').style.display=visible===0?'block':'none';
+    }
+    function updateFilterCounts(){
+      const counts={all:0,pending:0,approved:0,spam:0};
+      document.querySelectorAll('.comment-row').forEach(r=>{
+        counts.all++;
+        const s=r.dataset.status;
+        if(counts.hasOwnProperty(s))counts[s]++;
+      });
+      document.querySelectorAll('.filter-btn').forEach(btn=>{
+        const f=btn.dataset.filter;
+        const span=btn.querySelector('.filter-count');
+        if(span&&counts.hasOwnProperty(f))span.textContent=counts[f];
+      });
+    }
+    document.querySelectorAll('.filter-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilter();
+      });
+    });
+    applyFilter();updateFilterCounts(); // initial state on page load
+
+    // ── Preferences save/load ─────────────────────────────────────
+    const prefMsg=document.getElementById('prefMsg');
+    const brandName=document.getElementById('brandName');
+    const editorLayout=document.getElementById('editorLayout');
+    const editorPreviewCol=document.getElementById('editorPreviewCol');
+    const editorInputCol=document.getElementById('editorInputCol');
+    const previewLabel=document.getElementById('previewLabel');
+    const DEFAULTS={blogTitle:'静思录',tagline:'文字自有重量',perPage:'10',editorMode:'split'};
+
+    let prefMsgTimer;
+    function showPrefMsg(text,isError){
+      clearTimeout(prefMsgTimer);
+      prefMsg.textContent=text;prefMsg.classList.add('show');
+      prefMsg.style.background=isError
+        ?'color-mix(in oklch,var(--danger) 10%,transparent)'
+        :'color-mix(in oklch,var(--success) 12%,transparent)';
+      prefMsg.style.color=isError?'var(--danger)':'var(--success)';
+      prefMsg.style.border='1px solid '+(isError?'var(--danger)':'var(--success)');
+      prefMsgTimer=setTimeout(()=>{prefMsg.classList.remove('show');},3000);
+    }
+    function hidePrefMsg(){
+      clearTimeout(prefMsgTimer);
+      prefMsg.classList.remove('show');
+    }
+
+    function applyBlogTitle(title){
+      brandName.textContent=title||DEFAULTS.blogTitle;
+      document.title='管理后台 · '+(title||DEFAULTS.blogTitle);
+    }
+    function applyEditorMode(mode){
+      editorLayout.classList.remove('pure-mode');
+      editorPreviewCol.style.display='';
+      editorInputCol.style.display='';
+      previewLabel.textContent='实时预览';
+      updatePreview();
+      if(mode==='pure'){
+        editorLayout.classList.add('pure-mode');
+        editorPreviewCol.style.display='none';
+      }
+    }
+    // Load saved preferences
+    function loadPrefs(){
+      const saved=JSON.parse(localStorage.getItem('blog-prefs')||'{}');
+      const title=saved.blogTitle||DEFAULTS.blogTitle;
+      document.getElementById('prefBlogTitle').value=title;
+      document.getElementById('prefTagline').value=saved.tagline||DEFAULTS.tagline;
+      document.getElementById('prefPerPage').value=saved.perPage||DEFAULTS.perPage;
+      document.getElementById('prefEditorMode').value=saved.editorMode||DEFAULTS.editorMode;
+      applyBlogTitle(title);
+      applyEditorMode(saved.editorMode||DEFAULTS.editorMode);
+    }
+    loadPrefs();
+
+    document.getElementById('prefSubmit').addEventListener('click',()=>{
+      hidePrefMsg();
+      const prefs={
+        blogTitle:document.getElementById('prefBlogTitle').value.trim()||DEFAULTS.blogTitle,
+        tagline:document.getElementById('prefTagline').value.trim(),
+        perPage:document.getElementById('prefPerPage').value,
+        editorMode:document.getElementById('prefEditorMode').value
+      };
+      // Persist to localStorage (prototype — production uses PUT /api/settings for title/tagline)
+      localStorage.setItem('blog-prefs',JSON.stringify(prefs));
+      applyBlogTitle(prefs.blogTitle);
+      applyEditorMode(prefs.editorMode);
+      showPrefMsg('✓ 偏好设置已保存',false);
+    });
+
+    document.getElementById('prefCancel').addEventListener('click',()=>{
+      hidePrefMsg();
+      localStorage.removeItem('blog-prefs');
+      document.getElementById('prefBlogTitle').value=DEFAULTS.blogTitle;
+      document.getElementById('prefTagline').value=DEFAULTS.tagline;
+      document.getElementById('prefPerPage').value=DEFAULTS.perPage;
+      document.getElementById('prefEditorMode').value=DEFAULTS.editorMode;
+      applyBlogTitle(DEFAULTS.blogTitle);
+      applyEditorMode(DEFAULTS.editorMode);
+      showPrefMsg('已恢复默认设置',false);
+    });
+
+    // ── Password change ──────────────────────────────────────────────
+    const pwdMsg=document.getElementById('pwdMsg');
+    function showPwdMsg(type,text){
+      pwdMsg.style.display='block';
+      pwdMsg.textContent=text;
+      pwdMsg.style.background=type==='success'
+        ?'color-mix(in oklch,var(--success) 12%,transparent)'
+        :'color-mix(in oklch,var(--danger) 10%,transparent)';
+      pwdMsg.style.color=type==='success'?'var(--success)':'var(--danger)';
+      pwdMsg.style.border='1px solid '+(type==='success'?'var(--success)':'var(--danger)');
+    }
+    function hidePwdMsg(){pwdMsg.style.display='none';}
+
+    document.getElementById('pwdSubmit').addEventListener('click',()=>{
+      hidePwdMsg();
+      const cur=document.getElementById('pwdCurrent').value.trim();
+      const nw=document.getElementById('pwdNew').value.trim();
+      const cf=document.getElementById('pwdConfirm').value.trim();
+
+      if(!cur){showPwdMsg('error','请输入当前密码');document.getElementById('pwdCurrent').focus();return;}
+      if(!nw){showPwdMsg('error','请输入新密码');document.getElementById('pwdNew').focus();return;}
+      if(nw.length<8){showPwdMsg('error','新密码至少需要 8 个字符');document.getElementById('pwdNew').focus();return;}
+      if(!/[a-zA-Z]/.test(nw)||!/[0-9]/.test(nw)){showPwdMsg('error','新密码必须同时包含字母和数字');document.getElementById('pwdNew').focus();return;}
+      if(nw!==cf){showPwdMsg('error','两次输入的新密码不一致');document.getElementById('pwdConfirm').focus();return;}
+      if(nw===cur){showPwdMsg('error','新密码不能与当前密码相同');document.getElementById('pwdNew').focus();return;}
+
+      // Simulate password change (prototype)
+      showPwdMsg('success','✓ 密码已成功更新');
+      document.getElementById('pwdCurrent').value='';
+      document.getElementById('pwdNew').value='';
+      document.getElementById('pwdConfirm').value='';
+    });
+
+    document.getElementById('pwdCancel').addEventListener('click',()=>{
+      hidePwdMsg();
+      document.getElementById('pwdCurrent').value='';
+      document.getElementById('pwdNew').value='';
+      document.getElementById('pwdConfirm').value='';
+    });
+  </script>
+</body>
+</html>

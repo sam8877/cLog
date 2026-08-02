@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>关于 · 静思录</title>
+  <style>
+    :root {
+      --bg: #ffffff; --surface: #ffffff; --surface-warm: var(--surface);
+      --fg: #171717; --fg-2: #4d4d4d; --muted: #666666; --meta: #808080;
+      --border: rgba(0, 0, 0, 0.08); --border-soft: rgba(0, 0, 0, 0.04);
+      --accent: #0070f3; --accent-on: #ffffff;
+      --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+      --accent-hover: color-mix(in oklch, var(--accent) 88%, black);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --font-display: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-body: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco, monospace;
+      --fs-h1: clamp(32px, 3.5vw, 48px); --fs-h2: clamp(22px, 2vw, 30px);
+      --fs-h3: 20px; --fs-lead: 19px; --fs-body: 16px; --fs-sm: 14px; --fs-meta: 13px;
+      --gap-xs: 8px; --gap-sm: 12px; --gap-md: 20px; --gap-lg: 32px; --gap-xl: 56px; --gap-2xl: 96px;
+      --container: 780px; --gutter: 24px;
+      --radius: 8px; --radius-lg: 12px;
+      --elev-raised: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 2px rgba(0,0,0,0.04), 0 8px 8px -8px rgba(0,0,0,0.04), 0 0 0 1px #fafafa;
+      --motion-fast: 150ms; --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    }
+    [data-theme="dark"] {
+      --bg: #0a0a0a; --surface: #171717; --surface-warm: #171717;
+      --fg: #fafafa; --fg-2: #a1a1a1; --muted: #a1a1a1; --meta: #808080;
+      --border: rgba(255, 255, 255, 0.08); --border-soft: rgba(255, 255, 255, 0.04);
+      --accent: #3399ff; --accent-on: #0a0a0a;
+      --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 8%, transparent);
+      --elev-raised: 0 0 0 1px rgba(255,255,255,0.08), 0 2px 2px rgba(0,0,0,0.2), 0 8px 8px -8px rgba(0,0,0,0.2), 0 0 0 1px #1a1a1a;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:var(--fs-body);line-height:1.6;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+    img,svg{display:block;max-width:100%}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit;cursor:pointer;border:0;background:none}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    p{text-wrap:pretty}h1,h2,h3{text-wrap:balance}
+
+    .container{max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter)}
+    .row-between{display:flex;align-items:center;justify-content:space-between;gap:var(--gap-md);flex-wrap:wrap}
+    h1{font-family:var(--font-display);font-size:var(--fs-h1);line-height:1.12;letter-spacing:-0.02em;margin:0}
+    h2{font-family:var(--font-display);font-size:var(--fs-h2);line-height:1.2;letter-spacing:-0.015em;margin:0}
+    .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--meta)}
+    .lead{font-size:var(--fs-lead);line-height:1.55;color:var(--muted);max-width:48ch;margin:0}
+
+    .topnav{position:sticky;top:0;z-index:10;background:color-mix(in oklch,var(--bg) 92%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+    .topnav-inner{display:flex;align-items:center;justify-content:space-between;padding-block:14px}
+    .topnav .logo{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+    .topnav .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .topnav nav{display:flex;gap:var(--gap-lg);align-items:center}
+    .topnav nav a{font-size:14px;color:var(--muted);transition:color var(--motion-fast)}
+    .topnav nav a:hover,.topnav nav a.active{color:var(--fg)}
+    .topnav nav a.admin-link{color:var(--accent)}
+    .topnav nav a.admin-link:hover{color:var(--fg)}
+    .theme-toggle{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius);border:1px solid var(--border);color:var(--muted);font-size:16px;transition:all var(--motion-fast)}
+    .theme-toggle:hover{color:var(--fg);border-color:var(--fg)}
+    .hamburger{display:none;width:36px;height:36px;place-items:center;border-radius:var(--radius);border:1px solid var(--border);color:var(--fg);font-size:18px}
+    @media(max-width:700px){.topnav nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--surface);border-bottom:1px solid var(--border);padding:var(--gap-md);gap:var(--gap-sm)}.topnav nav.open{display:flex}.hamburger{display:grid}}
+
+    .page-header{padding:clamp(40px,6vw,80px) 0 var(--gap-lg);text-align:center}
+    .page-header h1{max-width:20ch;margin-inline:auto}
+    .page-body{max-width:640px;margin:0 auto;padding:0 var(--gutter) var(--gap-2xl)}
+    .page-body p{margin:0 0 var(--gap-md);line-height:1.75;font-size:17px}
+    .page-body h2{margin:var(--gap-xl) 0 var(--gap-md)}
+    .page-body ul,.page-body ol{margin:0 0 var(--gap-md);padding-left:24px}
+    .page-body li{margin-bottom:8px;line-height:1.7}
+    .page-body a{color:var(--accent);border-bottom:1px solid var(--accent-soft);transition:border-color var(--motion-fast)}
+    .page-body a:hover{border-color:var(--accent)}
+    .page-body blockquote{margin:var(--gap-lg) 0;padding:var(--gap-md) var(--gap-lg);border-left:3px solid var(--accent);background:var(--surface);border-radius:0 var(--radius) var(--radius) 0;color:var(--muted);font-style:italic}
+    .page-body blockquote p{margin:0}
+    .page-body hr{border:0;border-top:1px solid var(--border);margin:var(--gap-xl) 0}
+
+    /* friend links */
+    .friend-links{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap-md);margin:var(--gap-lg) 0}
+    @media(max-width:500px){.friend-links{grid-template-columns:1fr}}
+    .friend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:box-shadow var(--motion-fast)}
+    .friend-card:hover{box-shadow:var(--elev-raised)}
+    .friend-card h4{font-family:var(--font-display);font-size:16px;font-weight:500;margin:0 0 4px}
+    .friend-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.5}
+    .friend-card .friend-url{font-family:var(--font-mono);font-size:12px;color:var(--meta);margin-top:6px}
+
+    .pagefoot{padding-block:var(--gap-xl);color:var(--muted);font-size:13px;border-top:1px solid var(--border);text-align:center}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="container topnav-inner">
+      <a href="blog-home.html" class="logo"><span class="logo-dot"></span>静思录</a>
+      <button class="hamburger" id="hamburger" aria-label="菜单">☰</button>
+      <nav id="mainNav">
+        <a href="blog-home.html">首页</a>
+        <a href="blog-archive.html">归档</a>
+        <a href="blog-search.html">搜索</a>
+        <a href="blog-page.html" class="active">关于</a>
+        <a href="login.html" style="color:var(--muted);">登录</a>
+        <a href="admin.html" class="admin-link">管理</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">◐</button>
+    </div>
+  </header>
+
+  <main id="content">
+    <header class="page-header container" data-od-id="page-header">
+      <h1>关于</h1>
+      <p class="lead" style="margin: var(--gap-md) auto 0;">这个博客的由来、作者和原则。</p>
+    </header>
+
+    <article class="page-body" data-od-id="page-body">
+      <p>你好，我是<strong>静思</strong>——一个在全栈工程和分布式系统之间反复横跳的开发者。</p>
+
+      <p>这个博客始于 2024 年。当时我发现自己的笔记散落在六个不同的应用里，而搜索引擎越来越难找到"一个普通人写的、经过思考的、不为了 SEO 而存在的内容"。于是就有了静思录。</p>
+
+      <p>这里的文章主要围绕三个方向：</p>
+      <ul>
+        <li><strong>技术实践</strong>：Rust、TypeScript、系统设计——不是教程翻译，而是踩过坑之后的总结。</li>
+        <li><strong>工具与方法</strong>：编辑器配置、工作流优化、知识管理——追求效率但不沉迷于效率色情。</li>
+        <li><strong>写作与思考</strong>：关于如何思考、如何写作、如何保持注意力的元话题。</li>
+      </ul>
+
+      <h2>写作原则</h2>
+      <blockquote><p>"如果你从这篇文章中什么都没学到，至少它不应该浪费你的时间。"</p></blockquote>
+      <p>每篇文章发表前我会过三个问题：① 六个月后这篇文章还有价值吗？② 它说了什么别人没说过的东西？③ 如果我是读者，我会把它读完吗？</p>
+
+      <h2>技术栈</h2>
+      <p>这个博客本身也是一个持续迭代的 side project。当前架构：Markdown 写作 → 静态站点生成 → 手动部署。没有评论系统的第三方依赖，没有追踪脚本，没有 Cookie 弹窗。</p>
+
+      <hr />
+
+      <h2>友情链接</h2>
+      <div class="friend-links">
+        <a href="#" class="friend-card">
+          <h4>代码杂货铺</h4>
+          <p>一位 Rust 贡献者的技术博客，关于编程语言设计的深度思考。</p>
+          <div class="friend-url">misc.shop</div>
+        </a>
+        <a href="#" class="friend-card">
+          <h4>设计乘数</h4>
+          <p>专注于交互设计与前端工程交叉领域的设计师博客。</p>
+          <div class="friend-url">designx.sh</div>
+        </a>
+        <a href="#" class="friend-card">
+          <h4>纸上起航</h4>
+          <p>独立开发者的产品日志，从创意到上线的完整记录。</p>
+          <div class="friend-url">sailpaper.cc</div>
+        </a>
+        <a href="#" class="friend-card">
+          <h4>不二阅读</h4>
+          <p>每月一篇非虚构书籍深度笔记，慢阅读倡导者。</p>
+          <div class="friend-url">onlyread.cc</div>
+        </a>
+      </div>
+      <p style="font-size:var(--fs-sm);color:var(--meta);">想交换友链？<a href="mailto:hello@jingsilu.dev">给我发邮件</a>，附上你的博客链接和一句话介绍。</p>
+    </article>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container">
+      <span>© 静思录 · 2026</span>
+      <span class="meta" style="margin-left:12px;">← <a href="blog-home.html" style="color:var(--accent);">返回首页</a></span>
+    </div>
+  </footer>
+
+  <script>
+    const html=document.documentElement,toggle=document.getElementById('themeToggle');
+    const stored=localStorage.getItem('blog-theme');
+    if(stored)html.setAttribute('data-theme',stored);
+    else if(window.matchMedia('(prefers-color-scheme:dark)').matches)html.setAttribute('data-theme','dark');
+    toggle.textContent=html.getAttribute('data-theme')==='dark'?'◑':'◐';
+    toggle.addEventListener('click',()=>{const n=html.getAttribute('data-theme')==='dark'?'light':'dark';html.setAttribute('data-theme',n);toggle.textContent=n==='dark'?'◑':'◐';localStorage.setItem('blog-theme',n)});
+    const h=document.getElementById('hamburger'),n=document.getElementById('mainNav');
+    h.addEventListener('click',()=>{n.classList.toggle('open');h.textContent=n.classList.contains('open')?'✕':'☰'});
+  </script>
+</body>
+</html>

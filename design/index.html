@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>静思录 · 单用户博客系统</title>
+  <style>
+    /* ─── tokens — Vercel design system ─────────────────── */
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-warm: var(--surface);
+      --fg: #171717;
+      --fg-2: #4d4d4d;
+      --muted: #666666;
+      --meta: #808080;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-soft: rgba(0, 0, 0, 0.04);
+      --accent: #0070f3;
+      --accent-on: #ffffff;
+      --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --success: #16a34a;
+      --warn: #eab308;
+      --danger: #dc2626;
+      --font-display: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-body: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco, monospace;
+      --fs-h1: clamp(32px, 4vw, 48px);
+      --fs-h2: clamp(24px, 2.5vw, 32px);
+      --fs-h3: 22px;
+      --fs-lead: 19px;
+      --fs-body: 16px;
+      --fs-meta: 13px;
+      --gap-xs: 8px;
+      --gap-sm: 12px;
+      --gap-md: 20px;
+      --gap-lg: 32px;
+      --gap-xl: 56px;
+      --gap-2xl: 96px;
+      --container: 1120px;
+      --gutter: 32px;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --elev-ring: 0 0 0 1px var(--border);
+      --elev-raised: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 2px rgba(0,0,0,0.04), 0 8px 8px -8px rgba(0,0,0,0.04), 0 0 0 1px #fafafa;
+      --motion-fast: 150ms;
+      --motion-base: 200ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    /* ─── reset & base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    p { text-wrap: pretty; }
+    h1, h2, h3, h4 { text-wrap: balance; }
+
+    /* ─── layout ────────────────────────────────────────────────────── */
+    .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .section { padding-block: clamp(48px, 8vw, var(--gap-2xl)); }
+    .section + .section { border-top: 1px solid var(--border); }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--gap-md); flex-wrap: wrap; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap-lg); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap-lg); }
+    @media (max-width: 920px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    /* ─── type ──────────────────────────────────────────────────────── */
+    .h1, h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: 1.08; letter-spacing: -0.02em; margin: 0; }
+    .h2, h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15; letter-spacing: -0.015em; margin: 0; }
+    .h3, h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; margin: 0; }
+    .lead { font-size: var(--fs-lead); line-height: 1.5; color: var(--muted); max-width: 60ch; margin: 0; }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent); margin: 0 0 var(--gap-md);
+    }
+    .meta { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted); }
+
+    /* ─── nav ───────────────────────────────────────────────────────── */
+    .topnav {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in oklch, var(--bg) 92%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-inner { display: flex; align-items: center; justify-content: space-between; padding-block: 14px; }
+    .topnav .logo { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+
+    /* ─── buttons ───────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 20px; border-radius: var(--radius);
+      border: 1px solid transparent; font-size: 15px; font-weight: 500;
+      letter-spacing: -0.005em; transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--fg); color: #ffffff; border-color: var(--fg); }
+    .btn-primary:hover { background: #333333; }
+    .btn-secondary { background: transparent; color: var(--fg); border-color: var(--border); }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .btn-ghost { background: transparent; color: var(--fg); border-color: transparent; padding-inline: 8px; }
+    .btn-ghost:hover { color: var(--accent); }
+
+    /* ─── card ──────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px;
+      transition: box-shadow var(--motion-fast) var(--ease-standard);
+    }
+    .card:hover { box-shadow: var(--elev-raised); }
+    .card .card-icon {
+      width: 44px; height: 44px; display: grid; place-items: center;
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--accent); margin-bottom: var(--gap-md);
+      font-family: var(--font-mono); font-size: 18px;
+    }
+    .card h3 { margin-bottom: 8px; font-family: var(--font-display); font-weight: 500; }
+    .card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+    /* ─── hero ──────────────────────────────────────────────────────── */
+    .hero { padding-block: clamp(80px, 12vw, 140px); text-align: center; }
+    .hero-inner { max-width: 36ch; margin-inline: auto; }
+    .hero h1 { margin-bottom: var(--gap-md); }
+    .hero .lead { margin-bottom: var(--gap-lg); }
+
+    /* ─── section header ────────────────────────────────────────────── */
+    .sec-hd { margin-bottom: var(--gap-xl); }
+    .sec-hd h2 { margin-top: 6px; }
+
+    /* ─── footer ────────────────────────────────────────────────────── */
+    .pagefoot { padding-block: var(--gap-xl); color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+    /* ─── pill ──────────────────────────────────────────────────────── */
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 10px; background: var(--accent-soft); color: var(--accent);
+      border-radius: 999px; font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+
+    /* ─── responsive ────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .card { padding: 20px; }
+    }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="container topnav-inner">
+      <span class="logo">静思录</span>
+    </div>
+  </header>
+
+  <main id="content">
+    <!-- Hero -->
+    <section class="hero" data-od-id="hero">
+      <div class="container hero-inner">
+        <p class="eyebrow">单用户博客系统 · 原型</p>
+        <h1>一个安静写字的地方</h1>
+        <p class="lead">前端展示 + 后台管理，支持文章、独立页、标签、分类与评论。Markdown 编辑，暗色模式，代码高亮。</p>
+      </div>
+    </section>
+
+    <!-- Frontend pages -->
+    <section class="section" data-od-id="frontend-pages">
+      <div class="container">
+        <div class="sec-hd">
+          <p class="eyebrow">前端展示</p>
+          <h2>读者看到的世界</h2>
+        </div>
+        <div class="grid-3">
+          <a href="blog-home.html" class="card">
+            <div class="card-icon">⌂</div>
+            <h3>文章首页</h3>
+            <p>博客主页，精选文章 + 文章列表，侧边栏含标签/分类入口。</p>
+          </a>
+          <a href="blog-post.html" class="card">
+            <div class="card-icon">☷</div>
+            <h3>文章详情</h3>
+            <p>正文渲染、代码高亮、评论区、相关推荐。支持暗色模式切换。</p>
+          </a>
+          <a href="blog-page.html" class="card">
+            <div class="card-icon">☐</div>
+            <h3>独立页面</h3>
+            <p>关于、友链等固定页面模板，简洁排版，不含评论模块。</p>
+          </a>
+          <a href="blog-archive.html" class="card">
+            <div class="card-icon">☰</div>
+            <h3>标签 · 分类归档</h3>
+            <p>标签云与分类目录，Tab 切换浏览，点击筛选相关文章。</p>
+          </a>
+          <a href="blog-search.html" class="card">
+            <div class="card-icon">⌕</div>
+            <h3>搜索</h3>
+            <p>全文搜索文章，实时过滤结果，支持关键词高亮。</p>
+          </a>
+          <a href="login.html" class="card">
+            <div class="card-icon">🔑</div>
+            <h3>登录</h3>
+            <p>单用户系统登录页。用户名 + 密码验证，成功后跳转管理后台。</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Backend pages -->
+    <section class="section" data-od-id="backend-pages">
+      <div class="container">
+        <div class="sec-hd">
+          <p class="eyebrow">后台管理</p>
+          <h2>博主的工作台</h2>
+        </div>
+        <div class="grid-2">
+          <a href="admin.html" class="card">
+            <div class="card-icon" style="font-size: 22px;">⚙</div>
+            <h3>管理后台</h3>
+            <p>仪表盘、文章编辑器（Markdown 实时预览）、文章/页面/评论/标签/分类/媒体全功能管理。含草稿/发布状态与暗色模式。</p>
+            <span class="pill" style="margin-top: 12px;">SPA 单页</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pagefoot">
+    <div class="container row-between">
+      <span>© 静思录 · 单用户博客系统原型</span>
+      <span class="meta">Vercel 设计系统 · 响应式网页</span>
+    </div>
+  </footer>
+</body>
+</html>

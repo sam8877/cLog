@@ -1,0 +1,6 @@
+code/node_modules
+code/.wrangler
+code/playwright-report
+code/test-results
+design/.od-skills
+.claude/

@@ -1,0 +1,13 @@
+{
+  "kind": "critique-panel",
+  "score": 4,
+  "axes": {
+    "clarity":      { "score": 5, "notes": "Vercel pure-white canvas + near-black text. Shadow-as-border hairline removes visual noise. Focus-visible rings added globally for keyboard navigation." },
+    "hierarchy":    { "score": 4, "notes": "Geist Sans display at 48px with -0.02em tracking. 4-tier foreground ramp clear. ALL CAPS letter-spacing now at 0.06em minimum." },
+    "typography":   { "score": 5, "notes": "7-token syntax highlighting (kw/str/cm/fn/num/type/op) all derived from Vercel palette. Geist Mono for code blocks." },
+    "motion":       { "score": 4, "notes": "prefers-reduced-motion in all 7 files. Toast notifications with toastIn/toastOut keyframe animation. CSS transitions at 150-200ms." },
+    "brand":        { "score": 5, "notes": "Pure white #ffffff canvas, Vercel Black #171717 text. Console Blue #0070f3 accent. Black primary CTAs. Toast uses inverted fg/bg." },
+    "accessibility":{ "score": 4, "notes": "All outline:none replaced. :focus-visible globally. prefers-reduced-motion present. Toast replaces alert() — no intrusive dialogs. Form labels wired. aria-labels on icon buttons." },
+    "interaction":  { "score": 4, "notes": "Markdown toolbar with 7 insert actions + word count. Toast feedback with auto-dismiss + dynamic comment insertion. Button press animation (translateY). Tab switching in archive + admin views." }
+  }
+}

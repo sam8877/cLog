@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 · 静思录</title>
+  <style>
+    :root {
+      --bg: #ffffff; --surface: #ffffff; --surface-warm: var(--surface);
+      --fg: #171717; --fg-2: #4d4d4d; --muted: #666666; --meta: #808080;
+      --border: rgba(0, 0, 0, 0.08); --border-soft: rgba(0, 0, 0, 0.04);
+      --accent: #0070f3; --accent-on: #ffffff;
+      --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+      --accent-hover: color-mix(in oklch, var(--accent) 88%, black);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --success: #16a34a; --warn: #eab308; --danger: #dc2626;
+      --font-display: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-body: "Geist", "Geist Sans", -apple-system, "Segoe UI", Arial, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, "SF Mono", "Roboto Mono", Menlo, Monaco, monospace;
+      --fs-body: 16px; --fs-sm: 14px; --fs-meta: 13px;
+      --gap-xs: 8px; --gap-sm: 12px; --gap-md: 20px; --gap-lg: 32px; --gap-xl: 56px;
+      --radius: 8px; --radius-lg: 12px;
+      --elev-raised: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 2px rgba(0,0,0,0.04), 0 8px 8px -8px rgba(0,0,0,0.04), 0 0 0 1px #fafafa;
+      --motion-fast: 150ms; --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    }
+    [data-theme="dark"] {
+      --bg: #0a0a0a; --surface: #171717; --surface-warm: #171717;
+      --fg: #fafafa; --fg-2: #a1a1a1; --muted: #a1a1a1; --meta: #808080;
+      --border: rgba(255, 255, 255, 0.08); --border-soft: rgba(255, 255, 255, 0.04);
+      --accent: #3399ff; --accent-on: #0a0a0a;
+      --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 8%, transparent);
+      --elev-raised: 0 0 0 1px rgba(255,255,255,0.08), 0 2px 2px rgba(0,0,0,0.2), 0 8px 8px -8px rgba(0,0,0,0.2), 0 0 0 1px #1a1a1a;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:var(--fs-body);line-height:1.5;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit;cursor:pointer;border:0;background:none}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+    /* ─── login page layout ─────────────────────────────────────── */
+    .login-wrapper{flex:1;display:grid;place-items:center;padding:var(--gap-lg)}
+    .login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--gap-xl) var(--gap-lg);transition:box-shadow var(--motion-fast) var(--ease-standard)}
+    .login-card:hover{box-shadow:var(--elev-raised)}
+    .login-header{text-align:center;margin-bottom:var(--gap-lg)}
+    .login-header .logo{font-family:var(--font-display);font-size:24px;font-weight:600;letter-spacing:-0.02em;display:inline-flex;align-items:center;gap:8px;margin-bottom:var(--gap-xs)}
+    .login-header .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+    .login-header p{margin:0;color:var(--muted);font-size:var(--fs-sm)}
+    .theme-corner{position:fixed;top:16px;right:16px;z-index:10}
+    .theme-corner button{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius);border:1px solid var(--border);color:var(--muted);font-size:16px;transition:all var(--motion-fast);background:var(--surface)}
+    .theme-corner button:hover{color:var(--fg);border-color:var(--fg)}
+
+    /* ─── form fields ──────────────────────────────────────────── */
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--gap-md)}
+    .field label{font-size:12px;color:var(--meta);font-weight:500;text-transform:uppercase;letter-spacing:0.06em}
+    .field input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--fg);font:inherit;font-size:15px;transition:border-color var(--motion-fast)}
+    .field input:focus{border-color:var(--accent);outline:2px solid var(--accent-soft)}
+    .field input.error{border-color:var(--danger)}
+    .pw-wrapper{position:relative;display:flex}
+    .pw-wrapper input{flex:1;padding-right:40px}
+    .pw-toggle{position:absolute;right:2px;top:2px;bottom:2px;width:36px;display:grid;place-items:center;color:var(--meta);font-size:14px;border-radius:0 var(--radius) var(--radius) 0;transition:color var(--motion-fast)}
+    .pw-toggle:hover{color:var(--fg)}
+    .field-hint{font-size:12px;color:var(--meta);margin-top:2px}
+    .field-error{font-size:12px;color:var(--danger);margin-top:2px;display:none;align-items:center;gap:4px}
+    .field-error.show{display:flex}
+
+    /* ─── checkbox row ─────────────────────────────────────────── */
+    .row-check{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap-md)}
+    .row-check label{display:flex;align-items:center;gap:8px;font-size:var(--fs-sm);color:var(--muted);cursor:pointer}
+    .row-check input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+
+    /* ─── buttons ──────────────────────────────────────────────── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;border-radius:var(--radius);font-size:15px;font-weight:500;transition:all var(--motion-fast) var(--ease-standard)}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--fg);color:#ffffff;border:1px solid var(--fg)}
+    .btn-primary:hover{background:#333333}
+    .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+    /* ─── toast ────────────────────────────────────────────────── */
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;gap:8px}
+    .toast{background:var(--fg);color:var(--bg);padding:12px 20px;border-radius:var(--radius);font-size:14px;box-shadow:var(--elev-raised);animation:toastIn .3s var(--ease-standard);display:flex;align-items:center;gap:var(--gap-sm);max-width:360px}
+    .toast.error{border-left:3px solid var(--danger)}
+    .toast.success{border-left:3px solid var(--success)}
+    @keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-8px)}}
+    .toast.out{animation:toastOut .25s ease forwards}
+
+    /* ─── footer note ──────────────────────────────────────────── */
+    .login-footer-note{text-align:center;margin-top:var(--gap-lg);font-size:var(--fs-sm);color:var(--muted)}
+    .login-footer-note a{color:var(--accent);transition:opacity var(--motion-fast)}
+    .login-footer-note a:hover{opacity:0.8}
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+
+    @media (max-width: 460px) {
+      .login-card{padding:var(--gap-lg) var(--gap-md)}
+      .login-header .logo{font-size:20px}
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-corner">
+    <button id="themeToggle" aria-label="切换暗色模式">◐</button>
+  </div>
+  <div class="login-wrapper">
+    <div class="login-card" data-od-id="login-card">
+      <!-- Header -->
+      <div class="login-header">
+        <div class="logo"><span class="logo-dot"></span>静思录</div>
+        <p>仅需密码即可登录 · 单用户系统</p>
+      </div>
+
+      <!-- Form -->
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="password">密码</label>
+          <div class="pw-wrapper">
+            <input id="password" type="password" placeholder="输入登录密码" autocomplete="current-password" autofocus required />
+            <button type="button" class="pw-toggle" id="pwToggle" aria-label="显示密码" tabindex="-1">👁</button>
+          </div>
+          <span class="field-error" id="passwordError"><span>!</span>请输入密码</span>
+        </div>
+
+        <div class="row-check">
+          <label><input type="checkbox" id="rememberMe" /> 记住我（保持登录 30 天）</label>
+        </div>
+
+        <!-- 首次部署(初始随机密码)时显示: 登录成功后由 must_change 引导跳转 /admin?welcome=1 -->
+        <div class="initial-pwd-note" style="display:none;padding:10px 14px;border-radius:var(--radius);font-size:13px;line-height:1.5;background:color-mix(in oklch,var(--warn) 12%,transparent);border:1px solid color-mix(in oklch,var(--warn) 30%,transparent);color:color-mix(in oklch,var(--warn) 60%,var(--fg));margin-bottom:var(--gap-md);">
+          首次登录提示：初始密码为部署时生成的随机密码（见部署日志），登录后请在「设置 → 账户安全」中立即修改。
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="loginBtn">登 录</button>
+      </form>
+
+      <p class="login-footer-note">
+        返回 <a href="blog-home.html">博客首页</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Theme
+    const html=document.documentElement;
+    const stored=localStorage.getItem('blog-theme');
+    if(stored)html.setAttribute('data-theme',stored);
+    else if(window.matchMedia('(prefers-color-scheme:dark)').matches)html.setAttribute('data-theme','dark');
+    const themeToggle=document.getElementById('themeToggle');
+    themeToggle.textContent=html.getAttribute('data-theme')==='dark'?'◑':'◐';
+    themeToggle.addEventListener('click',()=>{
+      const n=html.getAttribute('data-theme')==='dark'?'light':'dark';
+      html.setAttribute('data-theme',n);
+      themeToggle.textContent=n==='dark'?'◑':'◐';
+      localStorage.setItem('blog-theme',n);
+    });
+
+    // Password visibility toggle
+    const pwInput=document.getElementById('password');
+    const pwToggle=document.getElementById('pwToggle');
+    pwToggle.addEventListener('click',()=>{
+      const isPw=pwInput.type==='password';
+      pwInput.type=isPw?'text':'password';
+      pwToggle.textContent=isPw?'👁‍🗨':'👁';
+      pwToggle.setAttribute('aria-label',isPw?'隐藏密码':'显示密码');
+    });
+
+    // Toast
+    function showToast(msg,type){
+      const c=document.getElementById('toastContainer');
+      const t=document.createElement('div');
+      t.className='toast '+(type||'success');
+      t.innerHTML='<span style="font-size:16px;">'+(type==='error'?'!':'✓')+'</span> '+msg;
+      c.appendChild(t);
+      setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250);},3000);
+    }
+
+    // Error display
+    function showPasswordError(show){
+      const el=document.getElementById('passwordError');
+      const input=document.getElementById('password');
+      if(show){el.classList.add('show');input.classList.add('error')}
+      else{el.classList.remove('show');input.classList.remove('error')}
+    }
+
+    // Login handler
+    const form=document.getElementById('loginForm');
+    const btn=document.getElementById('loginBtn');
+
+    form.addEventListener('submit',e=>{
+      e.preventDefault();
+      const p=document.getElementById('password').value.trim();
+
+      if(!p){showPasswordError(true);return}
+      showPasswordError(false);
+
+      // Simulate login
+      btn.disabled=true;
+      btn.innerHTML='<span style="display:inline-block;animation:toastIn .3s">验证中…</span>';
+
+      setTimeout(()=>{
+        if(p){
+          showToast('登录成功，正在跳转…');
+          document.getElementById('rememberMe').checked&&localStorage.setItem('blog-auth','1');
+          setTimeout(()=>{window.location.href='admin.html'},800);
+        }else{
+          showToast('密码错误','error');
+          btn.disabled=false;
+          btn.textContent='登 录';
+        }
+      },600);
+    });
+
+    // Clear error on input
+    document.getElementById('password').addEventListener('input',()=>showPasswordError(false));
+  </script>
+</body>
+</html>
