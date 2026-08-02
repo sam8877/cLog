@@ -56,12 +56,5 @@ jobs:
             sleep 2
           done
           curl -sf http://localhost:8788/ > /dev/null
-          # 默认密码 admin123 可登录
-          curl -sf -X POST http://localhost:8788/api/auth/login \
-            -H "Content-Type: application/json" -d '{"password":"admin123"}' \
-            -c /tmp/prod-cookie.txt > /dev/null
-          # 基础模式: 0 篇文章, 5 个分类, 无演示内容
-          test "$(curl -sf -b /tmp/prod-cookie.txt http://localhost:8788/api/posts | grep -o '"slug"' | wc -l)" = "0"
-          test "$(curl -sf -b /tmp/prod-cookie.txt http://localhost:8788/api/categories | grep -o '"slug"' | wc -l)" = "5"
-          test "$(curl -sf -b /tmp/prod-cookie.txt http://localhost:8788/api/tags | grep -o '"slug"' | wc -l)" = "0"
-          echo "生产模式基础数据验证通过"
+          # 生产模式验证逻辑在测试代码中: test/prod-seed.check.js
+          node test/prod-seed.check.js http://localhost:8788

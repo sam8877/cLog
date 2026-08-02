@@ -4,7 +4,7 @@
 //       媒体库、修改密码、偏好设置(保存/取消/纯模式)
 
 import { test, expect } from '@playwright/test';
-import { login, trackErrors, uid, deleteCommentsByAuthor, cleanupTestData } from './helpers';
+import { login, trackErrors, uid, deleteCommentsByAuthor, cleanupTestData, TEST_PW } from './helpers';
 
 // 套件启动前清理上次失败运行的残留数据
 test.beforeAll(async ({ browser }) => {
@@ -81,7 +81,7 @@ test('登录成功 → 后台仪表盘 + 会话 cookie', async ({ page, context 
 });
 
 test('勾选记住我 → 30 天持久 cookie', async ({ page, context }) => {
-  await login(page, 'admin123', true);
+  await login(page, TEST_PW, true);
   await expect(page.locator('#viewTitle')).toHaveText('仪表盘');
   const token = (await context.cookies()).find((c) => c.name === 'blog_token');
   expect(token!.expires).toBeGreaterThan(0);
@@ -181,7 +181,7 @@ test('新建文章: 保存草稿 → 列表出现', async ({ page }) => {
   await page.locator('#mdEditor').fill('草稿正文');
   await page.locator('#postCategory').selectOption('tech');
   await page.getByRole('button', { name: '保存草稿' }).click();
-  await expect(page.locator('.toast')).toContainText('草稿已保存');
+  await expect(page.locator('.toast', { hasText: '草稿已保存' })).toBeVisible();
   await page.locator('a[data-view="posts"]').click();
   const row = page.locator('#postsTableBody tr', { hasText: title });
   await expect(row).toBeVisible();
@@ -198,7 +198,7 @@ test('新建文章: 发布 → 公开可见 → 列表删除(confirm)', async ({
   await page.locator('#mdEditor').fill('## 发布正文');
   await page.locator('#postCategory').selectOption('tech');
   await page.getByRole('button', { name: '发布' }).click();
-  await expect(page.locator('.toast')).toContainText('文章已发布');
+  await expect(page.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
   const slug = await page.locator('#editSlug').inputValue();
   expect(slug).toBeTruthy();
   // 公开页可见
@@ -229,13 +229,13 @@ test('版本管理: 文章历史版本查看/预览/恢复', async ({ page }) =>
   await page.locator('#postTitle').fill(title);
   await page.locator('#mdEditor').fill('## 版本一');
   await page.getByRole('button', { name: '发布' }).click();
-  await expect(page.locator('.toast')).toContainText('文章已发布');
+  await expect(page.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
   const slug = await page.locator('#editSlug').inputValue();
   // 发布成功后编辑器被重置, 再次编辑需重新填写标题
   await page.locator('#postTitle').fill(title);
   await page.locator('#mdEditor').fill('## 版本二');
   await page.getByRole('button', { name: '发布' }).click();
-  await expect(page.locator('.toast').last()).toContainText('文章已发布');
+  await expect(page.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
 
   // 文章列表 → 版本按钮 → 模态
   await page.locator('a[data-view="posts"]').click();
@@ -259,7 +259,7 @@ test('版本管理: 文章历史版本查看/预览/恢复', async ({ page }) =>
   await row.getByRole('button', { name: '版本' }).click();
   page.once('dialog', (d) => { void d.accept(); });
   await revItems.last().getByRole('button', { name: '恢复' }).click();
-  await expect(page.locator('.toast').last()).toContainText('已恢复到版本');
+  await expect(page.locator('.toast', { hasText: '已恢复到版本' })).toBeVisible();
   await expect(page.locator('#revModalBackdrop')).toBeHidden();
   // 内容已回滚 (编辑器中验证)
   await row.getByRole('button', { name: '编辑' }).click();
@@ -318,7 +318,7 @@ test('草稿文章: 公开页不可见 (404)', async ({ page }) => {
   await page.locator('#postTitle').fill(title);
   await page.locator('#mdEditor').fill('草稿内容');
   await page.getByRole('button', { name: '保存草稿' }).click();
-  await expect(page.locator('.toast')).toContainText('草稿已保存');
+  await expect(page.locator('.toast', { hasText: '草稿已保存' })).toBeVisible();
   const slug = await page.locator('#editSlug').inputValue();
   // 公开页访问草稿 → 404
   const resp = await page.goto('/post/' + slug);
@@ -363,7 +363,7 @@ test('页面管理: 列表 + 编辑占位提示', async ({ page }) => {
   await page.locator('a[data-view="pages"]').click();
   await expect(page.locator('#pagesTableBody tr', { hasText: '关于' })).toBeVisible();
   await page.locator('#pagesTableBody tr', { hasText: '关于' }).getByRole('button', { name: '编辑' }).click();
-  await expect(page.locator('.toast')).toContainText('页面编辑功能开发中');
+  await expect(page.locator('.toast', { hasText: '页面编辑功能开发中' })).toBeVisible();
 });
 
 // ─── 7. 评论管理 ─────────────────────────────────────────
@@ -425,7 +425,7 @@ test('评论管理: XSS 昵称转义显示, 不弹窗', async ({ page }) => {
   await login(page);
   const { dialogs } = trackErrors(page);
   await page.locator('a[data-view="comments"]').click();
-  await expect(page.locator('.comment-row', { hasText: 'alert(1)' })).toBeVisible();
+  await expect(page.locator('.comment-row', { hasText: 'alert(1)' }).first()).toBeVisible();
   expect(dialogs).toEqual([]);
   await deleteCommentsByAuthor(page, author);
 });
@@ -531,16 +531,16 @@ test('媒体库: 上传 → 预览 → 复制链接 → 删除', async ({ page }
     'base64'
   );
   await page.locator('#mediaInput').setInputFiles({ name: 'e2e-test.png', mimeType: 'image/png', buffer: png });
-  await expect(page.locator('.toast')).toContainText('上传成功');
+  await expect(page.locator('.toast', { hasText: '上传成功' })).toBeVisible();
   // 非图片文件 → 服务端拒绝提示
   await page.locator('#mediaInput').setInputFiles({ name: 'note.txt', mimeType: 'text/plain', buffer: Buffer.from('not image') });
-  await expect(page.locator('.toast').last()).toContainText('仅支持图片');
+  await expect(page.locator('.toast', { hasText: '仅支持图片' })).toBeVisible();
   const card = page.locator('.media-card').first();
   await expect(card).toBeVisible();
   await expect(card.locator('.media-name')).toHaveText('e2e-test.png');
   // 复制 Markdown 引用链接
   await card.locator('.media-copy').click();
-  await expect(page.locator('.toast').last()).toContainText('链接已复制');
+  await expect(page.locator('.toast', { hasText: '链接已复制' })).toBeVisible();
   const clip = await page.evaluate(() => navigator.clipboard.readText());
   expect(clip).toMatch(/^http:\/\/localhost:8787\/media\/[0-9a-f-]+$/);
   // 删除 (confirm)
@@ -563,30 +563,30 @@ test('设置: 修改密码 (错误校验 → 成功 → 改回)', async ({ page 
   await page.locator('a[data-view="settings"]').click();
   // 当前密码错误
   await page.locator('#pwdCurrent').fill('wrong-pw');
-  await page.locator('#pwdNew').fill('a1b2c3d8');
-  await page.locator('#pwdConfirm').fill('a1b2c3d8');
+  await page.locator('#pwdNew').fill('x9y8z7w6');
+  await page.locator('#pwdConfirm').fill('x9y8z7w6');
   await page.locator('#pwdSubmit').click();
   await expect(page.locator('#pwdMsg')).toContainText('当前密码错误');
   // 新密码太短
-  await page.locator('#pwdCurrent').fill('admin123');
+  await page.locator('#pwdCurrent').fill(TEST_PW);
   await page.locator('#pwdNew').fill('a1b2');
   await page.locator('#pwdConfirm').fill('a1b2');
   await page.locator('#pwdSubmit').click();
   await expect(page.locator('#pwdMsg')).toContainText('至少需要 8 个字符');
   // 两次输入不一致
-  await page.locator('#pwdCurrent').fill('admin123');
-  await page.locator('#pwdNew').fill('a1b2c3d8');
-  await page.locator('#pwdConfirm').fill('a1b2c3d9');
+  await page.locator('#pwdCurrent').fill(TEST_PW);
+  await page.locator('#pwdNew').fill('x9y8z7w6');
+  await page.locator('#pwdConfirm').fill('x9y8z7w5');
   await page.locator('#pwdSubmit').click();
   await expect(page.locator('#pwdMsg')).toContainText('两次输入的新密码不一致');
   // 成功修改
-  await page.locator('#pwdConfirm').fill('a1b2c3d8');
+  await page.locator('#pwdConfirm').fill('x9y8z7w6');
   await page.locator('#pwdSubmit').click();
   await expect(page.locator('#pwdMsg')).toContainText('密码已成功更新');
-  // 改回 admin123
-  await page.locator('#pwdCurrent').fill('a1b2c3d8');
-  await page.locator('#pwdNew').fill('admin123');
-  await page.locator('#pwdConfirm').fill('admin123');
+  // 改回测试密码
+  await page.locator('#pwdCurrent').fill('x9y8z7w6');
+  await page.locator('#pwdNew').fill(TEST_PW);
+  await page.locator('#pwdConfirm').fill(TEST_PW);
   await page.locator('#pwdSubmit').click();
   await expect(page.locator('#pwdMsg')).toContainText('密码已成功更新');
 });
@@ -598,37 +598,77 @@ test('设置: 保存偏好 → 品牌名更新 + 服务器同步 → 恢复', as
   const newTitle = '测试博客' + uid();
   await page.locator('#prefBlogTitle').fill(newTitle);
   await page.locator('#prefTagline').fill('测试副标题');
+  // 站点文案字段 (UI 表单 → 首页 hero/页脚联动)
+  const newSlogan = '测试标语' + uid();
+  const newDesc = '测试站点简介' + uid();
+  await page.locator('#prefSlogan').fill(newSlogan);
+  await page.locator('#prefDescription').fill(newDesc);
+  await page.locator('#prefFooterNote').fill('测试署名');
   const syncDone = page.waitForResponse((r) => r.url().includes('/api/settings') && r.request().method() === 'PUT');
   await page.locator('#prefSubmit').click();
   await syncDone;
   await expect(page.locator('#prefMsg')).toContainText('偏好设置已保存');
   await expect(page.locator('#brandName')).toHaveText(newTitle);
-  // 服务器同步: 首页标题 + 导航 logo + 登录页 logo/title 全部变化
+  // 服务器同步: 首页标题 + 导航 logo + 登录页 logo/title + hero 文案 + 页脚署名
   await page.goto('/');
   await expect(page).toHaveTitle(new RegExp(newTitle));
   await expect(page.locator('.topnav .logo')).toContainText(newTitle);
-  await expect(page.locator('.pagefoot')).toContainText(newTitle);
+  await expect(page.locator('.eyebrow')).toHaveText(newSlogan);
+  await expect(page.locator('.lead')).toContainText(newDesc);
+  await expect(page.locator('.pagefoot')).toContainText('测试署名');
   await page.goto('/login');
   await expect(page).toHaveTitle(new RegExp('登录 · ' + newTitle));
   await expect(page.locator('.login-header .logo')).toContainText(newTitle);
   // 恢复默认
   await page.goto('/admin');
   await page.locator('a[data-view="settings"]').click();
-  await page.locator('#prefBlogTitle').fill('静思录');
+  await page.locator('#prefBlogTitle').fill('cLog');
   await page.locator('#prefTagline').fill('文字自有重量');
+  await page.locator('#prefSlogan').fill('写作 · 思考 · 记录');
+  await page.locator('#prefDescription').fill('关于技术、设计与日常思考的个人笔记。不追热点，只写值得留下的东西。');
+  await page.locator('#prefFooterNote').fill('由 Cloudflare Workers + D1 驱动');
   const syncBack = page.waitForResponse((r) => r.url().includes('/api/settings') && r.request().method() === 'PUT');
   await page.locator('#prefSubmit').click();
   await syncBack;
   await page.goto('/');
-  await expect(page).toHaveTitle(/静思录/);
-  await expect(page.locator('.topnav .logo')).toContainText('静思录');
+  await expect(page).toHaveTitle(/cLog/);
+  await expect(page.locator('.topnav .logo')).toContainText('cLog');
+  await expect(page.locator('.eyebrow')).toHaveText('写作 · 思考 · 记录');
+});
+
+test('强制改密: 初始密码登录 → 全屏改密界面 → 改密后正常使用', async ({ page }) => {
+  await login(page);
+  // 模拟初始状态: 密码改回默认 admin123 + 设置强制改密标记
+  await page.request.put('/api/auth/password', { data: { currentPassword: TEST_PW, newPassword: 'admin123' } });
+  await page.request.put('/api/settings', { data: { password_initial: '1' } });
+  // 初始密码登录 → 受限 token → 强制改密界面
+  await page.goto('/login');
+  await page.locator('#password').fill('admin123');
+  await page.locator('#loginBtn').click();
+  await page.waitForURL('**/admin*');
+  await expect(page.locator('#forcePwd')).toBeVisible();
+  await expect(page.locator('.main')).toBeHidden();
+  // 改密
+  await page.locator('#forcePwdCurrent').fill('admin123');
+  await page.locator('#forcePwdNew').fill(TEST_PW);
+  await page.locator('#forcePwdConfirm').fill(TEST_PW);
+  await page.locator('#forcePwdSubmit').click();
+  await expect(page.locator('#forcePwdMsg')).toContainText('密码已更新');
+  // 自动跳登录页 → 新密码登录 → 后台正常
+  await page.waitForURL('**/login');
+  await page.locator('#password').fill(TEST_PW);
+  await page.locator('#loginBtn').click();
+  await page.waitForURL('**/admin*');
+  await expect(page.locator('.main')).toBeVisible();
+  await expect(page.locator('#forcePwd')).toBeHidden();
+  // 恢复基线: 密码已是 TEST_PW, 标记已由改密清除
 });
 
 test('设置: 表单初始值来自服务器 + 取消恢复默认值', async ({ page }) => {
   await login(page);
   await page.locator('a[data-view="settings"]').click();
   // 服务器值作为初始值 (跨浏览器一致, 不再回落硬编码默认)
-  await expect(page.locator('#prefBlogTitle')).toHaveValue('静思录');
+  await expect(page.locator('#prefBlogTitle')).toHaveValue('cLog');
   await expect(page.locator('#prefTagline')).toHaveValue('文字自有重量');
   // 站点 URL 字段存在
   await expect(page.locator('#prefSiteUrl')).toBeVisible();
@@ -636,7 +676,7 @@ test('设置: 表单初始值来自服务器 + 取消恢复默认值', async ({ 
   await page.locator('#prefBlogTitle').fill('随便改改');
   await page.locator('#prefEditorMode').selectOption('pure');
   await page.locator('#prefCancel').click();
-  await expect(page.locator('#prefBlogTitle')).toHaveValue('静思录');
+  await expect(page.locator('#prefBlogTitle')).toHaveValue('cLog');
   await expect(page.locator('#prefTagline')).toHaveValue('文字自有重量');
   await expect(page.locator('#prefSiteUrl')).toHaveValue('');
   await expect(page.locator('#prefEditorMode')).toHaveValue('split');

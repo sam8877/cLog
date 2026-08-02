@@ -1,8 +1,8 @@
 {
-  "name": "jingsilu-blog",
+  "name": "clog-blog",
   "version": "1.0.0",
   "private": true,
-  "description": "静思录 · 基于 Cloudflare Workers + D1 的单用户博客系统",
+  "description": "cLog · 基于 Cloudflare Workers + D1 的单用户博客系统",
   "scripts": {
     "dev": "wrangler dev --local --var DEMO_SEED:1",
     "deploy": "wrangler deploy",

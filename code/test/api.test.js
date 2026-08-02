@@ -1,4 +1,4 @@
-// ─── 静思录 Blog · API 集成测试 ───────────────────────────
+// ─── cLog Blog · API 集成测试 ───────────────────────────
 // 用法:  node test.js [baseUrl]
 // ────────────────────────────────────────────────────────
 
@@ -68,10 +68,26 @@ const has   = (r, s) => r.text.includes(s);
 const jsonType = r => (r.headers.get('content-type') || '').includes('application/json');
 
 // ─── 登录助手 ──────────────────────────────────────────
+// 测试环境统一使用非默认密码 TEST_PW (默认密码 admin123 会触发强制改密拦截)
+const TEST_PW = 'a1b2c3d8';
 
-async function login(pw = 'admin123') {
+async function login(pw = TEST_PW) {
   cookie = '';
   const r = await post('/api/auth/login', { body: { password: pw } });
+  return r;
+}
+
+// 基线: 确保测试密码为 TEST_PW 且无强制改密标记
+// (覆盖: 全新库(admin123+标记) / 上轮残留标记 / 已是 TEST_PW 三种状态)
+async function ensureTestPw() {
+  let r = await login(TEST_PW);
+  if (is200(r)) { await del('/api/settings/password_initial'); return r; } // 已是 TEST_PW
+  // 密码是默认 admin123: 登录(可能受限) → 改密迁移到 TEST_PW
+  r = await post('/api/auth/login', { body: { password: 'admin123' } });
+  if (!is200(r)) { fail('ensureTestPw 基线登录', 'admin123 登录失败'); return r; }
+  await put('/api/auth/password', { body: { currentPassword: 'admin123', newPassword: TEST_PW } });
+  r = await login(TEST_PW);
+  ok('基线: 测试密码迁移完成', is200(r));
   return r;
 }
 
@@ -81,9 +97,17 @@ async function run() {
   const runStart = Date.now();
   const bar = '═'.repeat(38);
   console.log(`\n${B}╔${bar}╗${X}`);
-  console.log(`${B}║${X}  静思录 Blog · 全功能验证 v2          ${B}║${X}`);
+  console.log(`${B}║${X}  cLog Blog · 全功能验证 v2          ${B}║${X}`);
   console.log(`${B}║${X}  ${D}${BASE}${X}  ${B}║${X}`);
   console.log(`${B}╚${bar}╝${X}`);
+
+  // ========================================================
+  //  0. 测试基线: 确保测试密码 TEST_PW 且无强制改密标记
+  //     (强制改密机制下默认密码 admin123 会受限, 测试统一用非默认密码)
+  // ========================================================
+  sec('0. 测试基线');
+  await ensureTestPw();
+  if (!cookie) { fail('基线登录', '无法获取 cookie，后续测试将不可用'); }
 
   // ========================================================
   //  1. 公开页面路由
@@ -113,8 +137,12 @@ async function run() {
     ok('GET /page/不存在 → 404', is404(r));
   }
   {
+    // 基线已登录, 临时清 cookie 模拟未登录
+    const saved = cookie;
+    cookie = '';
     const r = await get('/api/__bogus__');
     ok('GET /api/不存在 → 401 (auth拦截)', is401(r));
+    cookie = saved;
   }
 
   // ========================================================
@@ -131,7 +159,7 @@ async function run() {
     ok('空密码 → 400', is400(r));
   }
   {
-    const r = await post('/api/auth/login', { body: { password: 'admin123' } });
+    const r = await post('/api/auth/login', { body: { password: TEST_PW } });
     ok('正确密码 → 200 + Set-Cookie', is200(r) && r.data?.success && !!cookie);
   }
   {
@@ -474,31 +502,31 @@ async function run() {
   }
   {
     const r = await put('/api/auth/password', { body: {
-      currentPassword: 'admin123', newPassword: ''
+      currentPassword: TEST_PW, newPassword: ''
     }});
     ok('空新密码 → 400', is400(r));
   }
   {
     const r = await put('/api/auth/password', { body: {
-      currentPassword: 'admin123', newPassword: '12345678'
+      currentPassword: TEST_PW, newPassword: '12345678'
     }});
     ok('纯数字密码 → 400 (需含字母)', is400(r));
   }
   {
     const r = await put('/api/auth/password', { body: {
-      currentPassword: 'admin123', newPassword: 'abcdefgh'
+      currentPassword: TEST_PW, newPassword: 'abcdefgh'
     }});
     ok('纯字母密码 → 400 (需含数字)', is400(r));
   }
   {
     const r = await put('/api/auth/password', { body: {
-      currentPassword: 'admin123', newPassword: 'a1b2c3d8'
+      currentPassword: TEST_PW, newPassword: 'x9y8z7w6'
     }});
     ok('刚好 8 位含字母数字 → 200', is200(r) && r.data?.success);
   }
-  // 改回
+  // 改回测试密码
   await put('/api/auth/password', { body: {
-    currentPassword: 'a1b2c3d8', newPassword: 'admin123'
+    currentPassword: 'x9y8z7w6', newPassword: TEST_PW
   }});
 
   // ========================================================
@@ -706,7 +734,7 @@ async function run() {
     await put('/api/settings', { body: { comment_max_per_window: '2' } });
     // 用独立模拟 IP 隔离计数, 避免历史访客评论计数干扰
     // (生产环境 Cloudflare 会覆盖客户端传入的 cf-connecting-ip, 无安全风险)
-    const fakeIp = { 'cf-connecting-ip': '203.0.113.' + (1 + Math.floor(Math.random() * 250)) };
+    const fakeIp = { 'cf-connecting-ip': '10.' + Math.floor(Math.random()*200) + '.' + Math.floor(Math.random()*250) + '.' + (1 + Math.floor(Math.random()*250)) };
     cookie = '';
     const c1 = await post('/api/comments', { body: { post_slug: 'knowledge-management-system', author: '限流测试A', body: 'x' }, headers: fakeIp });
     const c2 = await post('/api/comments', { body: { post_slug: 'knowledge-management-system', author: '限流测试B', body: 'x' }, headers: fakeIp });
@@ -787,7 +815,7 @@ async function run() {
     const pageSlug = 'about';
     const orig = (await get('/api/pages')).data.find(p => p.slug === pageSlug);
     // 前置守卫: 测试会把内容修改再还原, 若前置数据已脏会传播污染 — 快速失败
-    if (!orig?.content?.includes('关于静思录')) {
+    if (!orig?.content?.includes('关于 cLog')) {
       fail('页面版本测试前置数据', 'about 页面内容异常, 请先恢复 seed 数据');
     }
     await put('/api/pages/' + pageSlug, { body: { content: '页面版本测试内容' } });
@@ -813,7 +841,7 @@ async function run() {
   // 数据前缀: 串联测试(文章) / 串联评论 / 串联标签 / 串联分类 / flow-* slug
   // 契约说明: 标签计数计草稿(getTags 不区分状态), 分类计数只计已发布(getCategories)
   //           — 不对称行为被固化为契约, 若产品统一口径此用例会首先失败提醒
-  const fakeIp = () => ({ 'cf-connecting-ip': '203.0.113.' + (1 + Math.floor(Math.random() * 250)) });
+  const fakeIp = () => ({ 'cf-connecting-ip': '10.' + Math.floor(Math.random()*200) + '.' + Math.floor(Math.random()*250) + '.' + (1 + Math.floor(Math.random()*250)) });
 
   // ─── A: 发布→全站可见→下线→全站消失→重发布 (含相关推荐联动) ───
   {
@@ -1034,21 +1062,107 @@ async function run() {
   sec('19. review 修复项回归');
 
   {
-    // 改密标记 (password_initial): 改回默认弱口令必须重新标记引导
-    await login();
+    // 模拟初始状态: 把测试密码改回默认 admin123 + 设置强制改密标记
+    await put('/api/auth/password', { body: { currentPassword: TEST_PW, newPassword: 'admin123' } });
+    await put('/api/settings', { body: { password_initial: '1' } });
+    // 初始密码登录 → 仅获受限 token, 后台 API 一律 403
     const r1 = await post('/api/auth/login', { body: { password: 'admin123' } });
-    ok('19: 默认密码登录带 must_change 引导', is200(r1) && r1.data?.must_change === true);
-    // 改为强密码 → 标记清除
-    await put('/api/auth/password', { body: { currentPassword: 'admin123', newPassword: 'a1b2c3d8' } });
-    const r2 = await post('/api/auth/login', { body: { password: 'a1b2c3d8' } });
-    ok('19: 强密码登录 must_change 清除', is200(r2) && r2.data?.must_change === false);
-    // 改回默认弱口令 → 标记恢复 (review 修复: 防无提示弱口令状态)
-    await put('/api/auth/password', { body: { currentPassword: 'a1b2c3d8', newPassword: 'admin123' } });
-    const r3 = await post('/api/auth/login', { body: { password: 'admin123' } });
-    ok('19: 改回默认密码后 must_change 恢复', is200(r3) && r3.data?.must_change === true);
-    // 恢复登录态供后续使用
+    ok('19: 初始密码登录 must_change=true', is200(r1) && r1.data?.must_change === true);
+    const r403 = await get('/api/stats');
+    ok('19: 受限 token 访问后台 API → 403', r403.status === 403);
+    ok('19: 403 携带 must_change_password 码', r403.data?.code === 'must_change_password');
+    // 受限 token 允许改密 → 改密后标记清除
+    const pwd = await put('/api/auth/password', { body: { currentPassword: 'admin123', newPassword: TEST_PW } });
+    ok('19: 受限 token 可改密', is200(pwd));
+    const r2 = await post('/api/auth/login', { body: { password: TEST_PW } });
+    ok('19: 改密后登录 must_change=false', is200(r2) && r2.data?.must_change === false);
+    ok('19: 改密后后台 API 可用', is200(await get('/api/stats')));
+    // 恢复登录态 (密码已回到 TEST_PW, 标记已清除)
     await login();
     ok('19: 登录态恢复', !!cookie);
+  }
+
+  // ========================================================
+  // 20. 关于博主设置 (后台编辑 → 首页侧边栏联动)
+  // ========================================================
+  sec('20. 关于博主设置');
+
+  {
+    // 白名单读取
+    const r = await get('/api/settings');
+    ok('20: GET /api/settings 含 about_author', is200(r) && typeof r.data?.about_author === 'string');
+    // 默认状态 (空): 首页不展示关于博主板块
+    const home1 = await get('/');
+    ok('20: 未设置时首页不展示关于博主', !has(home1, '关于博主'));
+    // 设置自定义介绍 → 首页侧边栏联动
+    const custom = '二十年全栈老兵，专注分布式系统。' + Date.now().toString(36);
+    await put('/api/settings', { body: { about_author: custom } });
+    const home2 = await get('/');
+    ok('20: 设置后首页显示新文案', has(home2, custom));
+    ok('20: 设置后关于博主板块出现', has(home2, '关于博主'));
+    // 清空 → 板块消失
+    await put('/api/settings', { body: { about_author: '' } });
+    const home3 = await get('/');
+    ok('20: 清空后关于博主板块消失', !has(home3, '关于博主'));
+  }
+
+  // ========================================================
+  // 21. 站点文案配置 (hero 标语/简介/页脚署名/meta description)
+  // ========================================================
+  sec('21. 站点文案配置');
+
+  {
+    const r = await get('/api/settings');
+    ok('21: 白名单含 blog_slogan/description/footer_note', is200(r)
+      && typeof r.data?.blog_slogan === 'string'
+      && typeof r.data?.blog_description === 'string'
+      && typeof r.data?.footer_note === 'string');
+    // 前置清理: 清除可能的上轮残留, 保证"未设置"基线
+    for (const k of ['blog_slogan', 'blog_description', 'footer_note', 'about_author']) {
+      await del('/api/settings/' + k);
+    }
+    // 未设置(空): hero 眉题/描述/关于博主/页脚署名 均不展示
+    const home1 = await get('/');
+    ok('21: 未设置时 slogan 不展示', !has(home1, 'class="eyebrow"'));
+    ok('21: 未设置时简介不展示', !has(home1, 'class="lead"'));
+    ok('21: 未设置时无 meta description', !has(home1, '<meta name="description"'));
+    ok('21: 未设置时关于博主板块隐藏', !has(home1, '关于博主'));
+    ok('21: 默认页脚署名展示', has(home1, '由 Cloudflare Workers + D1 驱动'));
+    // 自定义文案联动
+    const slog = '深度技术随笔' + Date.now().toString(36);
+    const desc = '只写值得长期阅读的内容' + Date.now().toString(36);
+    const about = '二十年全栈老兵' + Date.now().toString(36);
+    await put('/api/settings', { body: { blog_slogan: slog, blog_description: desc, footer_note: '独立博客', about_author: about } });
+    const home2 = await get('/');
+    ok('21: slogan 生效', has(home2, slog));
+    ok('21: 简介生效', has(home2, desc));
+    ok('21: 页脚署名生效', has(home2, '独立博客'));
+    ok('21: 关于博主生效', has(home2, about));
+    ok('21: meta description 更新', has(home2, `<meta name="description" content="${desc}"`));
+    // 全部清空 → 全部隐藏 (与未设置一致)
+    await put('/api/settings', { body: { blog_slogan: '', blog_description: '', footer_note: '', about_author: '' } });
+    const home3 = await get('/');
+    ok('21: 清空后 slogan 隐藏', !has(home3, slog));
+    ok('21: 清空后简介隐藏', !has(home3, 'class="lead"'));
+    ok('21: 清空后页脚署名隐藏', !has(home3, '由 Cloudflare Workers'));
+    ok('21: 清空后关于博主隐藏', !has(home3, '关于博主'));
+    // 文章页 meta description 用摘要
+    const post = await get('/post/knowledge-management-system');
+    ok('21: 文章页含 meta description', has(post, '<meta name="description"'));
+    // 恢复: 站点文案写回 seed 默认值 (与 seed 一致), about_author 清除 (无默认)
+    await put('/api/settings', { body: {
+      blog_slogan: '写作 · 思考 · 记录',
+      blog_description: '关于技术、设计与日常思考的个人笔记。不追热点，只写值得留下的东西。',
+      footer_note: '由 Cloudflare Workers + D1 驱动',
+    } });
+    await del('/api/settings/about_author');
+    const home4 = await get('/');
+    ok('21: 恢复后默认 slogan 展示', has(home4, '写作 · 思考 · 记录'));
+    ok('21: 恢复后默认页脚署名', has(home4, '由 Cloudflare Workers + D1 驱动'));
+    {
+      const r = await del('/api/settings/password_hash');
+      ok('21: 清除敏感 key 被拒绝', r.status === 400);
+    }
   }
 
   // ========================================================

@@ -300,17 +300,18 @@ export function createDbService(db: D1Database) {
     },
 
     // ─── Rate limiting (滑动窗口) ─────────────────────────
-    /** 计数 +1, 返回当前窗口内次数 */
-    async incrRateLimit(key: string, windowSec: number): Promise<number> {
+    /** 窗口内未超阈值则计数 +1 并放行; 已超阈值返回 false 且不计数 (429 不加重惩罚) */
+    async checkRateLimit(key: string, windowSec: number, max: number): Promise<boolean> {
       const now = Math.floor(Date.now() / 1000);
       await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - windowSec).run();
       const row = await db.prepare('SELECT count FROM rate_limits WHERE key = ?').bind(key).first<{ count: number }>();
+      if (row && row.count >= max) return false;
       if (!row) {
         await db.prepare('INSERT INTO rate_limits (key, count, window_start) VALUES (?, 1, ?)').bind(key, now).run();
-        return 1;
+      } else {
+        await db.prepare('UPDATE rate_limits SET count = count + 1 WHERE key = ?').bind(key).run();
       }
-      await db.prepare('UPDATE rate_limits SET count = count + 1 WHERE key = ?').bind(key).run();
-      return row.count + 1;
+      return true;
     },
 
     async resetRateLimit(key: string): Promise<void> {

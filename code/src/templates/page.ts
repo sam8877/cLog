@@ -22,7 +22,7 @@ const EXTRA_CSS = `
 .page-body code{font-family:var(--font-mono);font-size:14px;background:var(--fg-soft);padding:2px 6px;border-radius:4px;color:var(--accent)}
 `;
 
-export function pageTemplate(page: Page | null, blogTitle = '静思录'): string {
+export function pageTemplate(page: Page | null, blogTitle = 'cLog'): string {
   if (!page) {
     const bodyHtml = `
     <header class="page-header container">

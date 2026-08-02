@@ -7,6 +7,7 @@ interface SearchData {
   posts: PostWithTags[];
   query?: string;
   blogTitle?: string;
+  footerNote?: string;
 }
 
 const EXTRA_CSS = `
@@ -81,8 +82,9 @@ doSearch();
     </section>`;
 
   return layoutHtml({
-    title: `搜索 · ${data.blogTitle || '静思录'}`,
+    title: `搜索 · ${data.blogTitle || 'cLog'}`,
     blogTitle: data.blogTitle,
+    footerNote: data.footerNote,
     currentPath: '/search',
     extraCss: EXTRA_CSS,
     extraScript,

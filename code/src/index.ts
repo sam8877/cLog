@@ -1,4 +1,4 @@
-// ─── 静思录 Blog · Cloudflare Worker Entry ──────────────
+// ─── cLog Blog · Cloudflare Worker Entry ──────────────
 
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
@@ -19,7 +19,6 @@ import type { Post, Comment, Tag, Category, Media } from './types';
 type Bindings = {
   DB: D1Database;
   MEDIA: R2Bucket;
-  ADMIN_PASSWORD?: string;
   DEMO_SEED?: string;
 };
 
@@ -45,7 +44,7 @@ app.use('*', async (c, next) => {
   if (!dbReady) {
     try {
       await ensureSchema(c.env.DB);
-      await seedDatabase(c.env.DB, { ADMIN_PASSWORD: c.env.ADMIN_PASSWORD, DEMO_SEED: c.env.DEMO_SEED });
+      await seedDatabase(c.env.DB, { DEMO_SEED: c.env.DEMO_SEED });
       dbReady = true;
     } catch (e) {
       console.error('[初始化] 建表/seed 失败, 下个请求重试:', e);
@@ -64,12 +63,16 @@ function db(c: any): DbService {
 // Home page (paginated)
 app.get('/', async (c) => {
   const d = db(c);
-  const [posts, tags, categories, blogTitle, blogTagline, perPageSetting] = await Promise.all([
+  const [posts, tags, categories, blogTitle, blogTagline, aboutAuthor, blogSlogan, blogDescription, footerNote, perPageSetting] = await Promise.all([
     d.getPosts('published'),
     d.getTags(),
     d.getCategories(),
     d.getSetting('blog_title'),
     d.getSetting('blog_tagline'),
+    d.getSetting('about_author'),
+    d.getSetting('blog_slogan'),
+    d.getSetting('blog_description'),
+    d.getSetting('footer_note'),
     d.getSetting('per_page'),
   ]);
   const perPage = Math.max(1, parseInt(perPageSetting || '10') || 10);
@@ -78,6 +81,10 @@ app.get('/', async (c) => {
     posts, tags, categories,
     blogTitle: blogTitle || undefined,
     blogTagline: blogTagline || undefined,
+    aboutAuthor: aboutAuthor || undefined,
+    blogSlogan: blogSlogan || undefined,
+    blogDescription: blogDescription || undefined,
+    footerNote: footerNote ?? undefined,
     page, perPage,
   }));
 });
@@ -119,27 +126,29 @@ app.get('/page/:slug', async (c) => {
 // Archive (all-posts tab paginated)
 app.get('/archive', async (c) => {
   const d = db(c);
-  const [posts, tags, categories, blogTitle, perPageSetting] = await Promise.all([
+  const [posts, tags, categories, blogTitle, footerNote, perPageSetting] = await Promise.all([
     d.getPosts('published'),
     d.getTags(),
     d.getCategories(),
     d.getSetting('blog_title'),
+    d.getSetting('footer_note'),
     d.getSetting('per_page'),
   ]);
   const perPage = Math.max(1, parseInt(perPageSetting || '10') || 10);
   const page = Math.max(1, parseInt(c.req.query('page') || '1') || 1);
-  return c.html(archiveTemplate({ posts, tags, categories, blogTitle: blogTitle || undefined, page, perPage }));
+  return c.html(archiveTemplate({ posts, tags, categories, blogTitle: blogTitle || undefined, footerNote: footerNote ?? undefined, page, perPage }));
 });
 
 // Search
 app.get('/search', async (c) => {
   const d = db(c);
-  const [posts, blogTitle] = await Promise.all([
+  const [posts, blogTitle, footerNote] = await Promise.all([
     d.getPosts('published'),
     d.getSetting('blog_title'),
+    d.getSetting('footer_note'),
   ]);
   const query = c.req.query('q') || '';
-  return c.html(searchTemplate({ posts, query, blogTitle: blogTitle || undefined }));
+  return c.html(searchTemplate({ posts, query, blogTitle: blogTitle || undefined, footerNote: footerNote ?? undefined }));
 });
 
 // Login page
@@ -160,7 +169,7 @@ app.get('/rss.xml', async (c) => {
   ]);
   const xml = rssXml({
     posts,
-    title: blogTitle || '静思录',
+    title: blogTitle || 'cLog',
     description: blogTagline || '文字自有重量',
     siteUrl: siteUrl || '',
   });
@@ -217,12 +226,12 @@ app.post('/api/comments', async (c) => {
         if (payload) autoApproved = true;
       } catch { /* not admin */ }
     }
-    // 访客评论限流: 10 分钟窗口内超过阈值 → 429 (管理员豁免)
+    // 访客评论限流: 10 分钟窗口内超过阈值 → 429 (管理员豁免; 429 不计数)
     if (!autoApproved) {
       const ip = c.req.header('cf-connecting-ip') || 'unknown';
       const maxComments = Math.max(1, parseInt((await d.getSetting('comment_max_per_window')) || '10') || 10);
-      const count = await d.incrRateLimit(`comment:${ip}`, 600);
-      if (count > maxComments) {
+      const allowed = await d.checkRateLimit(`comment:${ip}`, 600, maxComments);
+      if (!allowed) {
         return c.json({ error: '评论过于频繁，请稍后再试' }, 429);
       }
     }
@@ -607,16 +616,27 @@ admin.delete('/media/:id', async (c) => {
 
 // ─── Settings (白名单读取 / 任意写入) ────────────────────
 // 只返回非敏感设置 — password_hash / jwt_secret 等绝不外泄
-const PUBLIC_SETTING_KEYS = ['blog_title', 'blog_tagline', 'per_page', 'site_url'];
+const PUBLIC_SETTING_KEYS = ['blog_title', 'blog_tagline', 'about_author', 'blog_slogan', 'blog_description', 'footer_note', 'per_page', 'site_url'];
 
 admin.get('/settings', async (c) => {
   const d = db(c);
   const out: Record<string, string> = {};
   for (const key of PUBLIC_SETTING_KEYS) {
-    const v = await d.getSetting(key);
-    if (v !== null) out[key] = v;
+    // 白名单 key 恒定返回 (未设置时空串), 前端无需区分缺失与空值
+    out[key] = (await d.getSetting(key)) ?? '';
   }
   return c.json(out);
+});
+
+// 清除设置键 (白名单 key + password_initial 引导标记可清除, 回到"未设置"状态)
+// 注意: password_initial 只是改密引导标记(非凭据), 允许清除; password_hash/jwt_secret 等一律拒绝
+admin.delete('/settings/:key', async (c) => {
+  const key = c.req.param('key');
+  if (!PUBLIC_SETTING_KEYS.includes(key) && key !== 'password_initial') {
+    return c.json({ error: '该设置不可清除' }, 400);
+  }
+  await c.env.DB.prepare('DELETE FROM settings WHERE key = ?').bind(key).run();
+  return c.json({ success: true });
 });
 
 admin.put('/auth/password', changePasswordHandler);
@@ -637,9 +657,9 @@ admin.put('/settings', async (c) => {
 // ─── Seed endpoint (for initial setup) ────────────────────
 admin.get('/seed', async (c) => {
   try {
-    // 与中间件一致: 传入 env (ADMIN_PASSWORD / DEMO_SEED), 避免行为分叉
+    // 与中间件一致: 传入 env (DEMO_SEED), 避免行为分叉
     await ensureSchema(c.env.DB);
-    await seedDatabase(c.env.DB, { ADMIN_PASSWORD: c.env.ADMIN_PASSWORD, DEMO_SEED: c.env.DEMO_SEED });
+    await seedDatabase(c.env.DB, { DEMO_SEED: c.env.DEMO_SEED });
     return c.json({ success: true, message: '数据库已初始化' });
   } catch (e: any) {
     return c.json({ error: e.message || '初始化失败' }, 500);
@@ -649,7 +669,7 @@ admin.get('/seed', async (c) => {
 // ─── 404 ─────────────────────────────────────────────────
 app.get('*', async (c) => {
   const d = db(c);
-  const blogTitle = (await d.getSetting('blog_title')) || '静思录';
+  const blogTitle = (await d.getSetting('blog_title')) || 'cLog';
   return c.html(`<!doctype html>
 <html lang="zh-CN" data-theme="light">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />

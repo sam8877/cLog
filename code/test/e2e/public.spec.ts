@@ -42,9 +42,9 @@ test('首页: 精选卡片/文章列表/侧边栏组件齐全', async ({ page })
   await expect(page.locator('.log-row h3 a').first()).toHaveAttribute('href', /\/post\//);
   await expect(page.locator('.log-row .log-desc').first()).not.toBeEmpty();
   await expect(page.locator('.log-row').first()).toContainText('阅读约');
-  // 侧边栏
+  // 侧边栏 (关于博主默认空不展示)
   await expect(page.locator('.sidebar .search-box')).toBeVisible();
-  await expect(page.locator('.sidebar-widget', { hasText: '关于博主' })).toBeVisible();
+  await expect(page.locator('.sidebar-widget', { hasText: '关于博主' })).toHaveCount(0);
   await expect(page.locator('.sidebar-widget', { hasText: '分类' })).toBeVisible();
   await expect(page.locator('.cat-link').first()).toBeVisible();
   await expect(page.locator('.tag-cloud .tag').first()).toBeVisible();
@@ -169,7 +169,7 @@ test('访客提交评论 → 提示审核后显示, 不立即公开', async ({ p
   await page.locator('#cemail').fill('visitor@example.com');
   await page.locator('#ccontent').fill('这是一条待审核评论');
   await page.locator('#submitBtn').click();
-  await expect(page.locator('.toast')).toContainText('审核后显示');
+  await expect(page.locator('.toast', { hasText: '审核后显示' })).toBeVisible();
   // 刷新后不显示 (pending)
   await page.reload();
   await expect(page.locator('.comment', { hasText: author })).toHaveCount(0);
@@ -241,7 +241,7 @@ test('回复按钮: 访客隐藏, 管理员可见并即时显示回复', async (
   // 回复条目为内联样式无 class, 按文本定位
   await expect(ap.getByText(replyText)).toBeVisible();
   await expect(ap.getByText(/博主回复 ·/).first()).toBeVisible();
-  await expect(ap.locator('.toast')).toContainText('回复已提交');
+  await expect(ap.locator('.toast', { hasText: '回复已提交' })).toBeVisible();
   // 清理回复 (author=博主, body 含回复内容)
   const list = await (await ap.request.get('/api/comments')).json() as { id: string; author: string; body: string }[];
   for (const c of list) {
@@ -253,7 +253,7 @@ test('回复按钮: 访客隐藏, 管理员可见并即时显示回复', async (
 // ─── 7. 页面 (About / 404) ───────────────────────────────
 test('关于页渲染; 友链页链接; 不存在的页面 → 404', async ({ page }) => {
   await page.goto('/page/about');
-  await expect(page.locator('.page-body h2').first()).toContainText('关于静思录');
+  await expect(page.locator('.page-body h2').first()).toContainText('关于 cLog');
   await expect(page.locator('.page-body blockquote').first()).toBeVisible();
   // 友情链接页的链接列表
   await page.goto('/page/links');

@@ -6,7 +6,7 @@ export function adminTemplate(): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>管理后台 · 静思录</title>
+  <title>管理后台 · cLog</title>
   <style>
 :root{--bg:#ffffff;--surface:#ffffff;--surface-warm:var(--surface);--fg:#171717;--fg-2:#4d4d4d;--muted:#666666;--meta:#707070;--border:rgba(0,0,0,0.08);--border-soft:rgba(0,0,0,0.04);--accent:#0070f3;--accent-on:#ffffff;--accent-soft:color-mix(in oklch,var(--accent) 14%,transparent);--accent-hover:color-mix(in oklch,var(--accent) 88%,black);--fg-soft:color-mix(in oklch,var(--fg) 6%,transparent);--success:#16a34a;--warn:#eab308;--danger:#dc2626;--font-display:"Geist","Geist Sans",-apple-system,"Segoe UI",Arial,sans-serif;--font-body:"Geist","Geist Sans",-apple-system,"Segoe UI",Arial,sans-serif;--font-mono:"Geist Mono",ui-monospace,"SF Mono","Roboto Mono",Menlo,Monaco,monospace;--fs-body:15px;--fs-sm:13px;--fs-meta:12px;--gap-xs:6px;--gap-sm:12px;--gap-md:20px;--gap-lg:28px;--radius:8px;--radius-lg:12px;--elev-raised:0 0 0 1px rgba(0,0,0,0.08),0 2px 2px rgba(0,0,0,0.04),0 8px 8px -8px rgba(0,0,0,0.04);--motion-fast:150ms;--ease-standard:cubic-bezier(0.2,0,0,1);--sidebar-w:220px}
 [data-theme="dark"]{--bg:#0a0a0a;--surface:#171717;--surface-warm:#171717;--fg:#fafafa;--fg-2:#a1a1a1;--muted:#a1a1a1;--meta:#808080;--border:rgba(255,255,255,0.08);--border-soft:rgba(255,255,255,0.04);--accent:#3399ff;--accent-on:#0a0a0a;--accent-soft:color-mix(in oklch,var(--accent) 18%,transparent);--accent-hover:color-mix(in oklch,var(--accent) 88%,black);--fg-soft:color-mix(in oklch,var(--fg) 8%,transparent);--elev-raised:0 0 0 1px rgba(255,255,255,0.08),0 2px 2px rgba(0,0,0,0.2),0 8px 8px -8px rgba(0,0,0,0.2),0 0 0 1px #1a1a1a}
@@ -135,6 +135,13 @@ h1,h2,h3{margin:0}h2{font-family:var(--font-display);font-size:22px;font-weight:
 .comment-meta-row{display:flex;gap:var(--gap-sm);align-items:center;margin-bottom:4px;flex-wrap:wrap}
 .comment-body-text{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:8px}
 
+.force-pwd{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:var(--gap-md)}
+.force-pwd-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--gap-lg)}
+.force-pwd-card h2{margin-bottom:var(--gap-xs)}
+.force-pwd-card p{color:var(--muted);font-size:var(--fs-sm);margin:0 0 var(--gap-md)}
+#forcePwdMsg{margin-bottom:var(--gap-md);font-size:13px;display:none}
+#forcePwdMsg.show{display:block}
+
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:90;display:flex;align-items:center;justify-content:center;padding:var(--gap-md);backdrop-filter:blur(2px)}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:var(--elev-raised)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
@@ -165,7 +172,7 @@ h1,h2,h3{margin:0}h2{font-family:var(--font-display);font-size:22px;font-weight:
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand"><a href="/" style="display:flex;align-items:center;gap:8px;"><span id="brandName">静思录</span></a><span>管理</span></div>
+    <div class="sidebar-brand"><a href="/" style="display:flex;align-items:center;gap:8px;"><span id="brandName">cLog</span></a><span>管理</span></div>
     <nav class="sidebar-nav">
       <a href="#" class="active" aria-current="page" data-view="dashboard"><span class="nav-icon"><svg viewBox="0 0 20 20"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></span>仪表盘</a>
       <a href="#" data-view="editor"><span class="nav-icon"><svg viewBox="0 0 20 20"><path d="M13 3l4 4L7 17H3v-4L13 3z"/><line x1="11" y1="5" x2="14" y2="8"/></svg></span>写文章</a>
@@ -391,7 +398,7 @@ h1,h2,h3{margin:0}h2{font-family:var(--font-display);font-size:22px;font-weight:
             <div id="prefMsg" role="status" class="pref-msg"></div>
             <div class="field">
               <label for="prefBlogTitle">博客标题</label>
-              <input type="text" id="prefBlogTitle" value="静思录" placeholder="博客名称" />
+              <input type="text" id="prefBlogTitle" value="cLog" placeholder="博客名称" />
             </div>
             <div class="field">
               <label for="prefTagline">副标题</label>
@@ -400,6 +407,22 @@ h1,h2,h3{margin:0}h2{font-family:var(--font-display);font-size:22px;font-weight:
             <div class="field">
               <label for="prefSiteUrl">站点 URL（用于 RSS 绝对链接）</label>
               <input type="url" id="prefSiteUrl" value="" placeholder="https://example.com" />
+            </div>
+            <div class="field">
+              <label for="prefSlogan">站点标语（首页 hero 眉题，留空不展示）</label>
+              <input type="text" id="prefSlogan" value="" placeholder="写作 · 思考 · 记录" />
+            </div>
+            <div class="field">
+              <label for="prefDescription">站点简介（首页 hero 描述 + meta description，留空不展示）</label>
+              <textarea id="prefDescription" rows="2" placeholder="一句话描述你的博客"></textarea>
+            </div>
+            <div class="field">
+              <label for="prefFooterNote">页脚署名（留空隐藏）</label>
+              <input type="text" id="prefFooterNote" value="" placeholder="由 Cloudflare Workers + D1 驱动" />
+            </div>
+            <div class="field">
+              <label for="prefAboutAuthor">关于博主（首页侧边栏展示）</label>
+              <textarea id="prefAboutAuthor" rows="3" placeholder="一句话介绍自己，留空则首页不展示该板块"></textarea>
             </div>
             <div class="field">
               <label for="prefPerPage">每页显示文章数</label>
@@ -424,6 +447,19 @@ h1,h2,h3{margin:0}h2{font-family:var(--font-display);font-size:22px;font-weight:
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Force password change (初始密码未修改时全屏拦截) -->
+  <div class="force-pwd" id="forcePwd" style="display:none;">
+    <div class="force-pwd-card">
+      <h2>请先修改初始密码</h2>
+      <p>当前仍在使用初始密码，修改后才能使用管理后台。</p>
+      <div class="field"><label for="forcePwdCurrent">当前密码</label><input type="password" id="forcePwdCurrent" autocomplete="current-password" /></div>
+      <div class="field"><label for="forcePwdNew">新密码（至少 8 位，含字母和数字）</label><input type="password" id="forcePwdNew" autocomplete="new-password" /></div>
+      <div class="field"><label for="forcePwdConfirm">确认新密码</label><input type="password" id="forcePwdConfirm" autocomplete="new-password" /></div>
+      <div id="forcePwdMsg" role="alert"></div>
+      <button type="button" class="btn btn-primary" id="forcePwdSubmit" style="width:100%;">更新密码</button>
     </div>
   </div>
 
@@ -1040,7 +1076,7 @@ const editorLayout=document.getElementById('editorLayout');
 const editorPreviewCol=document.getElementById('editorPreviewCol');
 const editorInputCol=document.getElementById('editorInputCol');
 const previewLabel=document.getElementById('previewLabel');
-const DEFAULTS={blogTitle:'静思录',tagline:'文字自有重量',perPage:'10',editorMode:'split',siteUrl:''};
+const DEFAULTS={blogTitle:'cLog',tagline:'文字自有重量',perPage:'10',editorMode:'split',siteUrl:'',aboutAuthor:'',slogan:'',description:'',footerNote:''};
 
 let prefMsgTimer;
 function showPrefMsg(text,isError){
@@ -1084,9 +1120,17 @@ async function loadPrefs(){
   const title=server.blog_title||saved.blogTitle||DEFAULTS.blogTitle;
   const tagline=server.blog_tagline||saved.tagline||DEFAULTS.tagline;
   const siteUrl=server.site_url||saved.siteUrl||DEFAULTS.siteUrl;
+  const aboutAuthor=server.about_author||saved.aboutAuthor||DEFAULTS.aboutAuthor;
+  const slogan=server.blog_slogan||saved.slogan||DEFAULTS.slogan;
+  const description=server.blog_description||saved.description||DEFAULTS.description;
+  const footerNote=server.footer_note||saved.footerNote||DEFAULTS.footerNote;
   document.getElementById('prefBlogTitle').value=title;
   document.getElementById('prefTagline').value=tagline;
   document.getElementById('prefSiteUrl').value=siteUrl;
+  document.getElementById('prefAboutAuthor').value=aboutAuthor;
+  document.getElementById('prefSlogan').value=slogan;
+  document.getElementById('prefDescription').value=description;
+  document.getElementById('prefFooterNote').value=footerNote;
   document.getElementById('prefPerPage').value=saved.perPage||server.per_page||DEFAULTS.perPage;
   document.getElementById('prefEditorMode').value=saved.editorMode||DEFAULTS.editorMode;
   applyBlogTitle(title);
@@ -1100,6 +1144,10 @@ document.getElementById('prefSubmit').addEventListener('click',async()=>{
     blogTitle:document.getElementById('prefBlogTitle').value.trim()||DEFAULTS.blogTitle,
     tagline:document.getElementById('prefTagline').value.trim(),
     siteUrl:document.getElementById('prefSiteUrl').value.trim(),
+    aboutAuthor:document.getElementById('prefAboutAuthor').value.trim(),
+    slogan:document.getElementById('prefSlogan').value.trim(),
+    description:document.getElementById('prefDescription').value.trim(),
+    footerNote:document.getElementById('prefFooterNote').value.trim(),
     perPage:document.getElementById('prefPerPage').value,
     editorMode:document.getElementById('prefEditorMode').value
   };
@@ -1108,12 +1156,16 @@ document.getElementById('prefSubmit').addEventListener('click',async()=>{
   applyBlogTitle(prefs.blogTitle);
   applyEditorMode(prefs.editorMode);
   showPrefMsg('✓ 偏好设置已保存',false);
-  // Sync site-wide settings to server (每页文章数/站点 URL 也同步)
+  // Sync site-wide settings to server (每页文章数/站点 URL/关于博主/站点文案也同步)
   try {
     await api('/api/settings',{method:'PUT',body:JSON.stringify({
       blog_title:prefs.blogTitle,
       blog_tagline:prefs.tagline,
       site_url:prefs.siteUrl,
+      about_author:prefs.aboutAuthor,
+      blog_slogan:prefs.slogan,
+      blog_description:prefs.description,
+      footer_note:prefs.footerNote,
       per_page:prefs.perPage
     })});
   } catch(e) {
@@ -1127,6 +1179,10 @@ document.getElementById('prefCancel').addEventListener('click',()=>{
   document.getElementById('prefBlogTitle').value=DEFAULTS.blogTitle;
   document.getElementById('prefTagline').value=DEFAULTS.tagline;
   document.getElementById('prefSiteUrl').value=DEFAULTS.siteUrl;
+  document.getElementById('prefAboutAuthor').value=DEFAULTS.aboutAuthor;
+  document.getElementById('prefSlogan').value=DEFAULTS.slogan;
+  document.getElementById('prefDescription').value=DEFAULTS.description;
+  document.getElementById('prefFooterNote').value=DEFAULTS.footerNote;
   document.getElementById('prefPerPage').value=DEFAULTS.perPage;
   document.getElementById('prefEditorMode').value=DEFAULTS.editorMode;
   applyBlogTitle(DEFAULTS.blogTitle);
@@ -1134,9 +1190,56 @@ document.getElementById('prefCancel').addEventListener('click',()=>{
   showPrefMsg('已恢复默认设置',false);
 });
 
+// ─── 强制改密 (初始密码未修改时全屏拦截, 修改前无法使用后台) ──
+const forcePwd = document.getElementById('forcePwd');
+const forcePwdMsg = document.getElementById('forcePwdMsg');
+function showForcePwdMsg(type, text){
+  forcePwdMsg.textContent = text;
+  forcePwdMsg.style.background = type==='success' ? 'color-mix(in oklch,var(--success) 12%,transparent)' : 'color-mix(in oklch,var(--danger) 10%,transparent)';
+  forcePwdMsg.style.color = type==='success' ? 'var(--success)' : 'var(--danger)';
+  forcePwdMsg.style.border = '1px solid ' + (type==='success' ? 'var(--success)' : 'var(--danger)');
+  forcePwdMsg.classList.add('show');
+}
+async function checkForceChange(){
+  try{
+    const r = await api('/api/auth/check');
+    if(r && r.authenticated && r.must_change){
+      forcePwd.style.display = 'flex';
+      document.querySelector('.main').style.display = 'none';
+      document.getElementById('sidebar').style.display = 'none';
+      document.getElementById('forcePwdCurrent').focus();
+    }
+  }catch(e){ /* 未登录等, 正常渲染 */ }
+}
+document.getElementById('forcePwdSubmit').addEventListener('click', async () => {
+  const cur = document.getElementById('forcePwdCurrent').value.trim();
+  const nw = document.getElementById('forcePwdNew').value.trim();
+  const cf = document.getElementById('forcePwdConfirm').value.trim();
+  forcePwdMsg.classList.remove('show');
+  if(!cur){ showForcePwdMsg('error','请输入当前密码'); return; }
+  if(nw.length < 8 || !/[a-zA-Z]/.test(nw) || !/[0-9]/.test(nw)){ showForcePwdMsg('error','新密码至少 8 位且包含字母和数字'); return; }
+  if(nw !== cf){ showForcePwdMsg('error','两次输入的新密码不一致'); return; }
+  const btn = document.getElementById('forcePwdSubmit');
+  btn.disabled = true; btn.textContent = '提交中…';
+  try{
+    await api('/api/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword: cur, newPassword: nw }) });
+    showForcePwdMsg('success','✓ 密码已更新，正在重新登录…');
+    setTimeout(()=>{ location.href = '/login'; }, 1200);
+  }catch(e){
+    const err = await e.json().catch(() => ({ error: '修改失败' }));
+    showForcePwdMsg('error', err.error || '修改失败');
+    btn.disabled = false; btn.textContent = '更新密码';
+  }
+});
+// Enter 键提交
+document.getElementById('forcePwdConfirm').addEventListener('keydown', e => {
+  if(e.key === 'Enter') document.getElementById('forcePwdSubmit').click();
+});
+
 // ─── Init ───────────────────────────────────────────────
 loadDashboard();
-// 首次登录 (初始随机密码) 引导改密
+checkForceChange();
+// 首次登录 (初始密码) 引导改密 (强制改密界面未启用时的辅助提示)
 if (new URLSearchParams(location.search).get('welcome')) {
   setTimeout(()=>showToast('当前使用初始密码，建议立即在「设置 → 账户安全」中修改','info'),800);
 }

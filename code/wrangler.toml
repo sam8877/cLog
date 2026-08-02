@@ -2,8 +2,8 @@ name = "jingsilu-blog"
 main = "src/index.ts"
 compatibility_date = "2024-11-06"
 
-# 生产部署不设置 DEMO_SEED — 仅初始化基础数据 (设置 + 分类), 密码默认 admin123
-# (可通过 ADMIN_PASSWORD secret 覆盖, 登录后引导改密)
+# 生产部署不设置 DEMO_SEED — 仅初始化基础数据 (设置 + 分类)
+# 初始密码固定 admin123 (不支持环境变量注入), 登录后必须修改密码才能使用后台
 # 本地开发/测试: 需显式 --var DEMO_SEED:1 启用演示数据 (npm run dev 已内置)
 
 [[d1_databases]]
@@ -12,6 +12,7 @@ database_name = "jingsilu-db"
 database_id = "local-dev"
 
 [[r2_buckets]]
+# binding 名必须与代码一致 (index.ts 引用 c.env.MEDIA)
 binding = "MEDIA"
 bucket_name = "jingsilu-media"
 

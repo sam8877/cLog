@@ -1,4 +1,4 @@
-// ─── Data types for 静思录 blog ────────────────────────────
+// ─── Data types for cLog blog ────────────────────────────
 
 export interface Post {
   slug: string;

@@ -10,6 +10,7 @@ interface ArchiveData {
   page?: number;
   perPage?: number;
   blogTitle?: string;
+  footerNote?: string;
 }
 
 const EXTRA_CSS = `
@@ -166,8 +167,9 @@ document.getElementById('panel-categories').addEventListener('click',e=>{
 `;
 
   return layoutHtml({
-    title: `归档 · ${data.blogTitle || '静思录'}`,
+    title: `归档 · ${data.blogTitle || 'cLog'}`,
     blogTitle: data.blogTitle,
+    footerNote: data.footerNote,
     currentPath: '/archive',
     extraCss: EXTRA_CSS,
     extraScript,

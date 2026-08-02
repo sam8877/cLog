@@ -87,20 +87,20 @@ export async function seedDatabase(db: D1Database, env?: { ADMIN_PASSWORD?: stri
     console.log('Seeding database...');
 
   // ─── Settings (基础) ─────────────────────────────────────
-  // 密码: 默认 admin123, 生产可通过 ADMIN_PASSWORD 注入覆盖; 标记引导改密
-  const initialPassword = env?.ADMIN_PASSWORD || 'admin123';
-  const passwordHash = await sha256(initialPassword);
+  // 初始密码固定为 admin123 (不支持环境变量注入); 强制改密标记: 未改密时后台不可用
+  const passwordHash = await sha256('admin123');
   await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('password_hash', passwordHash).run();
-  await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('blog_title', '静思录').run();
+  await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('blog_title', 'cLog').run();
   // 与后台偏好设置的默认值保持一致 (DEFAULTS.tagline = '文字自有重量')
   await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('blog_tagline', '文字自有重量').run();
-  // 标记初始密码待修改 (登录后引导改密)
+  // 站点文案默认值 (用户清空后即隐藏展示)
+  await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('blog_slogan', '写作 · 思考 · 记录').run();
+  await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('blog_description', '关于技术、设计与日常思考的个人笔记。不追热点，只写值得留下的东西。').run();
+  await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('footer_note', '由 Cloudflare Workers + D1 驱动').run();
+  // 初始密码标记: 存在时登录仅获受限 token, 必须改密后才能使用后台
   await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('password_initial', '1').run();
 
-  // 仅默认密码时提示; ADMIN_PASSWORD 注入时绝不打印实际值 (防日志泄露凭据)
-  if (!env?.ADMIN_PASSWORD) {
-    console.log('  [静思录] 初始密码: admin123 (默认, 请登录后立即修改)');
-  }
+  console.log('  [cLog] 初始密码: admin123 (登录后必须修改密码才能使用后台)');
 
   // ─── Categories (基础分类骨架) ──────────────────────────
   await db.prepare('INSERT OR IGNORE INTO categories VALUES (?,?,?,?)').bind('tech', '技术', '编程语言、系统架构、前端工程实践', 1).run();
@@ -387,11 +387,11 @@ Iterator 辅助方法是惰性求值的——只在最后 toArray() 时才遍历
 
   // Pages
   await db.prepare('INSERT OR IGNORE INTO pages (slug, title, content, status, created_at, updated_at) VALUES (?,?,?,?,?,?)')
-    .bind('about', '关于', `## 关于静思录
+    .bind('about', '关于', `## 关于 cLog
 
 你好，我是**静思**——一个在全栈工程和分布式系统之间反复横跳的开发者。
 
-这个博客始于 2024 年。当时我发现自己的笔记散落在六个不同的应用里，而搜索引擎越来越难找到"一个普通人写的、经过思考的、不为了 SEO 而存在的内容"。于是就有了静思录。
+这个博客始于 2024 年。当时我发现自己的笔记散落在六个不同的应用里，而搜索引擎越来越难找到"一个普通人写的、经过思考的、不为了 SEO 而存在的内容"。于是就有了 cLog。
 
 这里的文章主要围绕三个方向：
 

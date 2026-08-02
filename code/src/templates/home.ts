@@ -9,6 +9,10 @@ interface HomeData {
   categories: Category[];
   blogTitle?: string;
   blogTagline?: string;
+  aboutAuthor?: string;
+  blogSlogan?: string;
+  blogDescription?: string;
+  footerNote?: string;
   page?: number;
   perPage?: number;
 }
@@ -57,7 +61,7 @@ function calcReadingTime(content: string): number {
 
 export function homeTemplate(data: HomeData): string {
   const { posts, tags, categories } = data;
-  const blogTitle = data.blogTitle || '静思录';
+  const blogTitle = data.blogTitle || 'cLog';
   const blogTagline = data.blogTagline || '文字自有重量';
 
   // 分页: 每页 perPage 篇, 第一页的第一篇以精选卡片展示
@@ -115,9 +119,9 @@ export function homeTemplate(data: HomeData): string {
     <!-- Hero -->
     <section class="section" style="padding-bottom:32px;">
       <div class="container">
-        <p class="eyebrow">写作 · 思考 · 记录</p>
+        ${data.blogSlogan ? `<p class="eyebrow">${data.blogSlogan}</p>` : ''}
         <h1 style="max-width:24ch;">${blogTagline}</h1>
-        <p class="lead" style="margin-top:var(--gap-md);">关于技术、设计与日常思考的个人笔记。不追热点，只写值得留下的东西。</p>
+        ${data.blogDescription ? `<p class="lead" style="margin-top:var(--gap-md);">${data.blogDescription}</p>` : ''}
       </div>
     </section>
 
@@ -139,10 +143,11 @@ export function homeTemplate(data: HomeData): string {
             </form>
           </div>
 
+          ${data.aboutAuthor ? `
           <div class="sidebar-widget">
             <h4>关于博主</h4>
-            <p>全栈工程师，目前关注 Rust、分布式系统和知识管理。这个博客记录我的学习过程和思考。</p>
-          </div>
+            <p>${data.aboutAuthor}</p>
+          </div>` : ''}
 
           <div class="sidebar-widget">
             <h4>分类</h4>
@@ -164,6 +169,8 @@ export function homeTemplate(data: HomeData): string {
   return layoutHtml({
     title: `${blogTitle} · ${blogTagline}`,
     blogTitle,
+    footerNote: data.footerNote,
+    description: data.blogDescription,
     currentPath: '/',
     extraCss: EXTRA_CSS,
     bodyHtml,

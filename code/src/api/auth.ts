@@ -117,6 +117,8 @@ export function authMiddleware(db: D1Database) {
       if (!payload) {
         return c.json({ error: '登录已过期' }, 401);
       }
+      const r1 = restrictedCheck(c, payload);
+      if (r1) return r1;
       return next();
     }
 
@@ -125,9 +127,21 @@ export function authMiddleware(db: D1Database) {
     if (!payload) {
       return c.json({ error: '登录已过期' }, 401);
     }
-
+    const r2 = restrictedCheck(c, payload);
+    if (r2) return r2;
     await next();
   };
+}
+
+// 强制改密: 初始密码 token (payload.initial) 仅允许调用改密接口, 其余后台 API 一律 403
+function restrictedCheck(c: Context, payload: Record<string, unknown>): Response | void {
+  if (payload.initial === true) {
+    const url = new URL(c.req.url);
+    const isPasswordChange = url.pathname === '/api/auth/password' && c.req.method === 'PUT';
+    if (!isPasswordChange) {
+      return c.json({ error: '请先修改初始密码后才能使用后台', code: 'must_change_password' }, 403);
+    }
+  }
 }
 
 // Login handler
@@ -136,10 +150,11 @@ export async function loginHandler(c: Context): Promise<Response> {
   const { password, rememberMe } = await c.req.json<{ password: string; rememberMe?: boolean }>();
 
   // 登录失败限流: 10 分钟窗口内失败超过阈值 → 429 (阈值可经设置调整)
+  // 注意: 429 响应不计数 (拒绝请求不加重惩罚, 避免自锁)
   const ip = c.req.header('cf-connecting-ip') || 'unknown';
   const maxAttempts = await getSettingInt(db, 'login_max_attempts', 10);
-  const attempts = await incrRateLimit(db, `login:${ip}`, 600);
-  if (attempts > maxAttempts) {
+  const allowed = await checkRateLimit(db, `login:${ip}`, 600, maxAttempts);
+  if (!allowed) {
     return c.json({ error: '尝试次数过多，请 10 分钟后再试' }, 429);
   }
 
@@ -155,17 +170,17 @@ export async function loginHandler(c: Context): Promise<Response> {
   // 登录成功 → 清除失败计数
   await resetRateLimit(db, `login:${ip}`);
 
+  // 初始密码标记存在 → 签发受限 token (仅可改密), 前端进入强制改密流程
+  const initial = await db.prepare('SELECT value FROM settings WHERE key = ?').bind('password_initial').first();
+  const mustChange = !!initial;
+
   const secret = await getJwtSecret(db);
   const now = Math.floor(Date.now() / 1000);
   const days = rememberMe ? 30 : 7;
   const token = await signJwt(
-    { sub: 'admin', iat: now, exp: now + 86400 * days }, // 30 days with "remember me", otherwise 7 days
+    { sub: 'admin', iat: now, exp: now + 86400 * days, ...(mustChange ? { initial: true } : {}) },
     secret
   );
-
-  // 初始密码尚未修改 → 提示前端引导改密
-  const initial = await db.prepare('SELECT value FROM settings WHERE key = ?').bind('password_initial').first();
-  const mustChange = !!initial;
 
   // Session cookie (no Max-Age) when "remember me" is unchecked — cleared on browser close
   const maxAge = rememberMe ? `; Max-Age=${86400 * days}` : '';
@@ -184,16 +199,18 @@ async function getSettingInt(db: D1Database, key: string, fallback: number): Pro
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-async function incrRateLimit(db: D1Database, key: string, windowSec: number): Promise<number> {
+// 滑动窗口限流: 窗口内未超阈值则计数 +1 并放行; 已超阈值返回 false 且不计数
+async function checkRateLimit(db: D1Database, key: string, windowSec: number, max: number): Promise<boolean> {
   const now = Math.floor(Date.now() / 1000);
   await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - windowSec).run();
   const row = await db.prepare('SELECT count FROM rate_limits WHERE key = ?').bind(key).first<{ count: number }>();
+  if (row && row.count >= max) return false;
   if (!row) {
     await db.prepare('INSERT INTO rate_limits (key, count, window_start) VALUES (?, 1, ?)').bind(key, now).run();
-    return 1;
+  } else {
+    await db.prepare('UPDATE rate_limits SET count = count + 1 WHERE key = ?').bind(key).run();
   }
-  await db.prepare('UPDATE rate_limits SET count = count + 1 WHERE key = ?').bind(key).run();
-  return row.count + 1;
+  return true;
 }
 
 async function resetRateLimit(db: D1Database, key: string): Promise<void> {
@@ -237,12 +254,8 @@ export async function changePasswordHandler(c: Context): Promise<Response> {
   // Hash and store new password
   const hash = await sha256(newPassword);
   await db.prepare('UPDATE settings SET value = ? WHERE key = ?').bind(hash, 'password_hash').run();
-  // 初始密码已修改 → 清除引导标记
+  // 初始密码已修改 → 清除强制改密标记 (此后登录签发完整 token)
   await db.prepare('DELETE FROM settings WHERE key = ?').bind('password_initial').run();
-  // 安全: 改回默认弱口令时重新标记引导改密 (防止无提示的弱口令状态)
-  if (newPassword === 'admin123') {
-    await db.prepare('INSERT OR IGNORE INTO settings VALUES (?, ?)').bind('password_initial', '1').run();
-  }
 
   return c.json({ success: true, message: '密码已更新' });
 }
@@ -255,8 +268,11 @@ export async function checkAuthHandler(c: Context): Promise<Response> {
   const match = cookie.match(/blog_token=([^;]+)/);
   const token = match ? match[1] : null;
 
-  if (!token) return c.json({ authenticated: false });
+  if (!token) return c.json({ authenticated: false, must_change: false });
 
   const payload = await verifyJwt(token, secret);
-  return c.json({ authenticated: !!payload });
+  if (!payload) return c.json({ authenticated: false, must_change: false });
+  // 受限 token (初始密码未改) 或标记仍存在 → 前端强制改密
+  const initial = await db.prepare('SELECT value FROM settings WHERE key = ?').bind('password_initial').first();
+  return c.json({ authenticated: true, must_change: payload.initial === true || !!initial });
 }

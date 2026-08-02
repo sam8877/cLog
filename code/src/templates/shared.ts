@@ -1,5 +1,5 @@
 // ─── Shared CSS & Layout Templates ────────────────────────
-// Vercel-inspired design system for 静思录 blog
+// Vercel-inspired design system for cLog blog
 
 export const CSS_TOKENS = `
 :root {
@@ -112,7 +112,7 @@ export interface NavLink {
   className?: string;
 }
 
-export function topnavHtml(navLinks: NavLink[], currentPath?: string, blogTitle = '静思录'): string {
+export function topnavHtml(navLinks: NavLink[], currentPath?: string, blogTitle = 'cLog'): string {
   const links = navLinks.map(l => {
     const cls = l.active || l.href === currentPath ? ' active' : '';
     const extra = l.className ? ` style="color:var(--muted);"` : '';
@@ -131,13 +131,17 @@ export function topnavHtml(navLinks: NavLink[], currentPath?: string, blogTitle 
   </header>`;
 }
 
-export function footerHtml(blogTitle = '静思录'): string {
+// 默认页脚署名 (settings.footer_note 未设置时显示; 设置空则隐藏)
+export const DEFAULT_FOOTER_NOTE = '由 Cloudflare Workers + D1 驱动';
+
+export function footerHtml(blogTitle = 'cLog', footerNote?: string): string {
+  const note = footerNote === undefined ? DEFAULT_FOOTER_NOTE : footerNote;
   return `<footer class="pagefoot">
     <div class="container row-between">
       <span>© ${blogTitle} · ${new Date().getFullYear()}</span>
       <span style="display:flex;gap:var(--gap-md);align-items:center;">
         <a href="/rss.xml" class="meta" style="display:inline-flex;align-items:center;gap:4px;" aria-label="RSS 订阅">RSS <svg width="13" height="13" viewBox="0 0 20 20" style="stroke:currentColor;fill:none;stroke-width:1.5;"><circle cx="4.5" cy="15.5" r="1.8" fill="currentColor" stroke="none"/><path d="M4 9.5a6.5 6.5 0 016.5 6.5"/><path d="M4 4.5A11.5 11.5 0 0115.5 16"/></svg></a>
-        <span class="meta">由 Cloudflare Workers + D1 驱动</span>
+        ${note ? `<span class="meta">${note}</span>` : ''}
       </span>
     </div>
   </footer>`;
@@ -167,10 +171,12 @@ export function layoutHtml(opts: {
   footerHtml?: string;
   extraScript?: string;
   blogTitle?: string;
+  footerNote?: string;
+  description?: string;
 }): string {
-  const blogTitle = opts.blogTitle || '静思录';
+  const blogTitle = opts.blogTitle || 'cLog';
   const nav = topnavHtml(opts.navLinks, opts.currentPath, blogTitle);
-  const footer = opts.footerHtml ?? footerHtml(blogTitle);
+  const footer = opts.footerHtml ?? footerHtml(blogTitle, opts.footerNote);
 
   return `<!doctype html>
 <html lang="${opts.lang || 'zh-CN'}" data-theme="light">
@@ -178,6 +184,7 @@ export function layoutHtml(opts: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${opts.title}</title>
+  ${opts.description ? `<meta name="description" content="${opts.description.replace(/"/g, '&quot;')}" />` : ''}
   <style>${CSS_TOKENS}${opts.extraCss || ''}</style>
   ${opts.extraHead || ''}
 </head>

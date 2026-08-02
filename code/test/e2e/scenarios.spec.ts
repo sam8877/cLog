@@ -30,7 +30,7 @@ test('串联A: 发布文章抢占首页精选, 删除后恢复', async ({ browse
   await admin.locator('#postTitle').fill(title);
   await admin.locator('#mdEditor').fill('## 串联正文');
   await admin.getByRole('button', { name: '发布' }).click();
-  await expect(admin.locator('.toast')).toContainText('文章已发布');
+  await expect(admin.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
   const slug = await admin.locator('#editSlug').inputValue();
 
   // 公开页: 新文章占据精选卡
@@ -67,7 +67,7 @@ test('串联B: 访客评论 pending 不计 → 后台批准 → 公开计数+1',
   await vis.locator('#cname').fill(author);
   await vis.locator('#ccontent').fill('串联评论内容');
   await vis.locator('#submitBtn').click();
-  await expect(vis.locator('.toast')).toContainText('审核后显示');
+  await expect(vis.locator('.toast', { hasText: '审核后显示' })).toBeVisible();
   // 刷新: pending 不渲染, 计数仍 0
   await vis.reload();
   await expect(vis.locator('.comments-section h2')).toContainText('评论 (0)');
@@ -107,7 +107,7 @@ test('串联C: 媒体上传 → 插入文章 → 发布渲染 → 删媒体裂�
     'base64'
   );
   await admin.locator('#mediaInput').setInputFiles({ name: 'flow.png', mimeType: 'image/png', buffer: png });
-  await expect(admin.locator('.toast').last()).toContainText('上传成功');
+  await expect(admin.locator('.toast', { hasText: '上传成功' })).toBeVisible();
   await admin.locator('.media-copy').first().click();
   const mediaUrl = await admin.evaluate(() => navigator.clipboard.readText());
   expect(mediaUrl).toMatch(/\/media\/[0-9a-f-]+$/);
@@ -119,7 +119,7 @@ test('串联C: 媒体上传 → 插入文章 → 发布渲染 → 删媒体裂�
   await admin.locator('#postTitle').fill(title);
   await admin.locator('#mdEditor').fill(`![串联图](${mediaUrl})`);
   await admin.getByRole('button', { name: '发布' }).click();
-  await expect(admin.locator('.toast').last()).toContainText('文章已发布');
+  await expect(admin.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
   const slug = await admin.locator('#editSlug').inputValue();
 
   // 公开页: 图片真实渲染
@@ -221,13 +221,13 @@ test('串联F: 版本恢复后公开页内容回滚', async ({ browser }) => {
   await admin.locator('#postTitle').fill(title);
   await admin.locator('#mdEditor').fill('## 版本一');
   await admin.getByRole('button', { name: '发布' }).click();
-  await expect(admin.locator('.toast').last()).toContainText('文章已发布');
+  await expect(admin.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
   const slug = await admin.locator('#editSlug').inputValue();
   // 编辑器已重置, 重填标题编辑为版本二
   await admin.locator('#postTitle').fill(title);
   await admin.locator('#mdEditor').fill('## 版本二');
   await admin.getByRole('button', { name: '发布' }).click();
-  await expect(admin.locator('.toast').last()).toContainText('文章已发布');
+  await expect(admin.locator('.toast', { hasText: '文章已发布' })).toBeVisible();
 
   // 公开页: 版本二
   const pubCtx = await browser.newContext();
@@ -242,12 +242,62 @@ test('串联F: 版本恢复后公开页内容回滚', async ({ browser }) => {
   await expect(admin.locator('.rev-item')).toHaveCount(2);
   admin.once('dialog', (d) => { void d.accept(); });
   await admin.locator('.rev-item').last().getByRole('button', { name: '恢复' }).click();
-  await expect(admin.locator('.toast').last()).toContainText('已恢复到版本');
+  await expect(admin.locator('.toast', { hasText: '已恢复到版本' })).toBeVisible();
 
   // 公开页: 内容回滚到版本一
   await pub.goto('/post/' + slug);
   await expect(pub.locator('.post-body h2')).toHaveText('版本一');
 
   await admin.request.delete('/api/posts/' + slug);
+  await actx.close(); await pubCtx.close();
+});
+
+// ─── G: 站点文案 空不展示 → 设置展示 → 清空隐藏 ────────────
+test('串联G: 站点标语/简介/关于博主 空不展示, 设置后展示, 清空后隐藏', async ({ browser }) => {
+  const actx = await browser.newContext();
+  const admin = await actx.newPage();
+  await login(admin);
+  // 前置: 清除站点文案键, 保证"未设置"基线
+  for (const k of ['blog_slogan', 'blog_description', 'about_author']) {
+    await admin.request.delete('/api/settings/' + k);
+  }
+  // 公开页: 空 → hero 无眉题/描述、无关于博主板块、无 meta description
+  const pubCtx = await browser.newContext();
+  const pub = await pubCtx.newPage();
+  await pub.goto('/');
+  await expect(pub.locator('.eyebrow')).toHaveCount(0);
+  await expect(pub.locator('.lead')).toHaveCount(0);
+  await expect(pub.locator('.sidebar-widget', { hasText: '关于博主' })).toHaveCount(0);
+  await expect(pub.locator('meta[name="description"]')).toHaveCount(0);
+
+  // 设置 → 全部展示
+  await admin.request.put('/api/settings', {
+    data: { blog_slogan: '测试标语', blog_description: '测试站点简介', about_author: '测试博主介绍' },
+  });
+  await pub.goto('/');
+  await expect(pub.locator('.eyebrow')).toHaveText('测试标语');
+  await expect(pub.locator('.lead')).toContainText('测试站点简介');
+  await expect(pub.locator('meta[name="description"]')).toHaveAttribute('content', '测试站点简介');
+  await expect(pub.locator('.sidebar-widget', { hasText: '关于博主' })).toBeVisible();
+
+  // 清空 → 全部隐藏
+  await admin.request.put('/api/settings', {
+    data: { blog_slogan: '', blog_description: '', about_author: '' },
+  });
+  await pub.goto('/');
+  await expect(pub.locator('.eyebrow')).toHaveCount(0);
+  await expect(pub.locator('.lead')).toHaveCount(0);
+  await expect(pub.locator('.sidebar-widget', { hasText: '关于博主' })).toHaveCount(0);
+  await expect(pub.locator('meta[name="description"]')).toHaveCount(0);
+
+  // 清理: 站点文案恢复 seed 默认值, about_author 清除 (无默认)
+  await admin.request.put('/api/settings', {
+    data: {
+      blog_slogan: '写作 · 思考 · 记录',
+      blog_description: '关于技术、设计与日常思考的个人笔记。不追热点，只写值得留下的东西。',
+      footer_note: '由 Cloudflare Workers + D1 驱动',
+    },
+  });
+  await admin.request.delete('/api/settings/about_author');
   await actx.close(); await pubCtx.close();
 });

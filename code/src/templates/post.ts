@@ -152,7 +152,7 @@ document.querySelectorAll('.comment-reply-link').forEach(btn=>{
 });
 `;
 
-export function postTemplate(data: PostData, relatedPosts: PostWithTags[] = [], blogTitle = '静思录'): string {
+export function postTemplate(data: PostData, relatedPosts: PostWithTags[] = [], blogTitle = 'cLog'): string {
   const { post, comments } = data;
 
   const tagHtml = post.tags?.map(t => `<span class="tag">${t.name}</span>`).join('') || '';
@@ -227,6 +227,7 @@ export function postTemplate(data: PostData, relatedPosts: PostWithTags[] = [], 
   return layoutHtml({
     title: `${post.title} — ${blogTitle}`,
     blogTitle,
+    description: post.excerpt || post.content?.slice(0, 160),
     currentPath: `/post/${post.slug}`,
     extraCss: EXTRA_CSS,
     extraScript: EXTRA_SCRIPT,

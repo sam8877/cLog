@@ -1,4 +1,4 @@
--- 静思录 Blog D1 Database Schema
+-- cLog Blog D1 Database Schema
 
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,

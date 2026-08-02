@@ -1,6 +1,6 @@
 // ─── Login Page Template ──────────────────────────────────
 
-export function loginTemplate(error?: string, blogTitle = '静思录'): string {
+export function loginTemplate(error?: string, blogTitle = 'cLog'): string {
   const errorHtml = error ? `<p style="color:var(--danger);text-align:center;margin-top:var(--gap-sm);font-size:var(--fs-sm);" role="alert">${error}</p>` : '';
 
   return `<!doctype html>
